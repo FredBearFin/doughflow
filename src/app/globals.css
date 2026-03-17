@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+:root {
+  --brand-amber: #F59E0B;
+  --brand-amber-dark: #B45309;
+  --status-ok: #16A34A;
+  --status-low: #D97706;
+  --status-critical: #DC2626;
+  --status-pending: #6366F1;
+  --surface: #FAFAF9;
+  --surface-elevated: #FFFFFF;
+  --border: #E7E5E4;
+  --background: var(--surface);
+  --foreground: #1C1917;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-amber: var(--brand-amber);
+  --color-brand-amber-dark: var(--brand-amber-dark);
+  --color-status-ok: var(--status-ok);
+  --color-status-low: var(--status-low);
+  --color-status-critical: var(--status-critical);
+  --color-status-pending: var(--status-pending);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Minimum touch targets for bakery staff */
+button, [role="button"], a {
+  min-height: 44px;
+}
+
+/* Monospace numbers */
+.tabular-nums {
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-variant-numeric: tabular-nums;
+}

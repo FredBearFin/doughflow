@@ -1,0 +1,273 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Multi-tenancy ───────────────────────────────────────────────────────────
+
+model Tenant {
+  id               String    @id @default(cuid())
+  name             String
+  slug             String    @unique
+  plan             Plan      @default(TRIAL)
+  trialEndsAt      DateTime?
+  stripeCustomerId String?
+  createdAt        DateTime  @default(now())
+
+  users           TenantUser[]
+  ingredients     Ingredient[]
+  recipes         Recipe[]
+  suppliers       Supplier[]
+  purchaseOrders  PurchaseOrder[]
+  wasteLogs       WasteLog[]
+  inventoryLedger InventoryLedger[]
+  sales           Sale[]
+}
+
+enum Plan {
+  TRIAL
+  ACTIVE
+  CANCELLED
+}
+
+model TenantUser {
+  id       String @id @default(cuid())
+  tenantId String
+  userId   String
+  role     Role   @default(BAKER)
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  user     User   @relation(fields: [userId], references: [id])
+
+  @@unique([tenantId, userId])
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  BAKER
+}
+
+// ─── Core Inventory ──────────────────────────────────────────────────────────
+
+model Ingredient {
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  sku           String?
+  unit          Unit     @default(GRAM)
+  currentStock  Float    @default(0)
+  reorderPoint  Float    @default(0)
+  reorderQty    Float    @default(0)
+  leadTimeDays  Int      @default(3)
+  costPerUnit   Float    @default(0)
+  shelfLifeDays Int?
+  supplierId    String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant              @relation(fields: [tenantId], references: [id])
+  supplier      Supplier?           @relation(fields: [supplierId], references: [id])
+  recipeLines   RecipeIngredient[]
+  ledgerEntries InventoryLedger[]
+  wasteLogs     WasteLog[]
+  purchaseLines PurchaseOrderLine[]
+
+  @@unique([tenantId, name])
+}
+
+enum Unit {
+  GRAM
+  KILOGRAM
+  MILLILITER
+  LITER
+  EACH
+}
+
+model Recipe {
+  id           String   @id @default(cuid())
+  tenantId     String
+  name         String
+  description  String?
+  batchSize    Int      @default(1)
+  yieldPct     Float    @default(0.95)
+  sellingPrice Float    @default(0)
+  imageUrl     String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant      Tenant             @relation(fields: [tenantId], references: [id])
+  ingredients RecipeIngredient[]
+  sales       Sale[]
+
+  @@unique([tenantId, name])
+}
+
+model RecipeIngredient {
+  id           String     @id @default(cuid())
+  recipeId     String
+  ingredientId String
+  quantity     Float
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([recipeId, ingredientId])
+}
+
+// ─── Inventory Movements ─────────────────────────────────────────────────────
+
+model InventoryLedger {
+  id           String       @id @default(cuid())
+  tenantId     String
+  ingredientId String
+  qty          Float
+  reason       LedgerReason
+  refId        String?
+  note         String?
+  createdAt    DateTime     @default(now())
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+}
+
+enum LedgerReason {
+  PURCHASE
+  PRODUCTION
+  WASTE
+  ADJUSTMENT
+  OPENING
+}
+
+model WasteLog {
+  id           String   @id @default(cuid())
+  tenantId     String
+  ingredientId String
+  qty          Float
+  reason       String?
+  loggedBy     String?
+  createdAt    DateTime @default(now())
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+}
+
+// ─── Procurement ─────────────────────────────────────────────────────────────
+
+model Supplier {
+  id       String  @id @default(cuid())
+  tenantId String
+  name     String
+  email    String?
+  phone    String?
+  website  String?
+  notes    String?
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  ingredients Ingredient[]
+  orders      PurchaseOrder[]
+}
+
+model PurchaseOrder {
+  id         String    @id @default(cuid())
+  tenantId   String
+  supplierId String
+  status     POStatus  @default(DRAFT)
+  expectedAt DateTime?
+  sentAt     DateTime?
+  receivedAt DateTime?
+  totalCost  Float     @default(0)
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  tenant   Tenant              @relation(fields: [tenantId], references: [id])
+  supplier Supplier            @relation(fields: [supplierId], references: [id])
+  lines    PurchaseOrderLine[]
+}
+
+enum POStatus {
+  DRAFT
+  SENT
+  CONFIRMED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrderLine {
+  id              String  @id @default(cuid())
+  purchaseOrderId String
+  ingredientId    String
+  qty             Float
+  unitCost        Float
+  receivedQty     Float?
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  ingredient    Ingredient    @relation(fields: [ingredientId], references: [id])
+}
+
+// ─── Sales ───────────────────────────────────────────────────────────────────
+
+model Sale {
+  id       String   @id @default(cuid())
+  tenantId String
+  recipeId String
+  qty      Int
+  revenue  Float
+  source   String   @default("MANUAL")
+  soldAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  recipe Recipe @relation(fields: [recipeId], references: [id])
+}
+
+// ─── Auth (NextAuth) ──────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  tenants       TenantUser[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
