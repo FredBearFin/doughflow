@@ -26,6 +26,12 @@ function LoginContent() {
     signIn("google", { callbackUrl: "/" });
   };
 
+  const handleDevLogin = async () => {
+    setLoading(true);
+    await signIn("dev", { email: "owner@flourandsalt.com", callbackUrl: "/" });
+    setLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -91,6 +97,17 @@ function LoginContent() {
                   or
                 </div>
               </div>
+
+              {process.env.NODE_ENV === "development" && (
+                <Button
+                  onClick={handleDevLogin}
+                  variant="outline"
+                  className="w-full mb-4 gap-2 border-dashed border-amber-400 text-amber-700 hover:bg-amber-50"
+                  disabled={loading}
+                >
+                  ⚡ Dev Login (Sam Baker)
+                </Button>
+              )}
 
               <form onSubmit={handleEmail} className="space-y-3">
                 <div className="space-y-1.5">

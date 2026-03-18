@@ -13,7 +13,7 @@ model Tenant {
   id               String    @id @default(cuid())
   name             String
   slug             String    @unique
-  plan             Plan      @default(TRIAL)
+  plan             String    @default("TRIAL")
   trialEndsAt      DateTime?
   stripeCustomerId String?
   createdAt        DateTime  @default(now())
@@ -28,27 +28,15 @@ model Tenant {
   sales           Sale[]
 }
 
-enum Plan {
-  TRIAL
-  ACTIVE
-  CANCELLED
-}
-
 model TenantUser {
   id       String @id @default(cuid())
   tenantId String
   userId   String
-  role     Role   @default(BAKER)
+  role     String @default("BAKER")
   tenant   Tenant @relation(fields: [tenantId], references: [id])
   user     User   @relation(fields: [userId], references: [id])
 
   @@unique([tenantId, userId])
-}
-
-enum Role {
-  OWNER
-  MANAGER
-  BAKER
 }
 
 // ─── Core Inventory ──────────────────────────────────────────────────────────
@@ -58,7 +46,7 @@ model Ingredient {
   tenantId      String
   name          String
   sku           String?
-  unit          Unit     @default(GRAM)
+  unit          String   @default("GRAM")
   currentStock  Float    @default(0)
   reorderPoint  Float    @default(0)
   reorderQty    Float    @default(0)
@@ -78,14 +66,6 @@ model Ingredient {
   purchaseLines PurchaseOrderLine[]
 
   @@unique([tenantId, name])
-}
-
-enum Unit {
-  GRAM
-  KILOGRAM
-  MILLILITER
-  LITER
-  EACH
 }
 
 model Recipe {
@@ -122,25 +102,17 @@ model RecipeIngredient {
 // ─── Inventory Movements ─────────────────────────────────────────────────────
 
 model InventoryLedger {
-  id           String       @id @default(cuid())
+  id           String   @id @default(cuid())
   tenantId     String
   ingredientId String
   qty          Float
-  reason       LedgerReason
+  reason       String
   refId        String?
   note         String?
-  createdAt    DateTime     @default(now())
+  createdAt    DateTime @default(now())
 
   tenant     Tenant     @relation(fields: [tenantId], references: [id])
   ingredient Ingredient @relation(fields: [ingredientId], references: [id])
-}
-
-enum LedgerReason {
-  PURCHASE
-  PRODUCTION
-  WASTE
-  ADJUSTMENT
-  OPENING
 }
 
 model WasteLog {
@@ -176,7 +148,7 @@ model PurchaseOrder {
   id         String    @id @default(cuid())
   tenantId   String
   supplierId String
-  status     POStatus  @default(DRAFT)
+  status     String    @default("DRAFT")
   expectedAt DateTime?
   sentAt     DateTime?
   receivedAt DateTime?
@@ -188,14 +160,6 @@ model PurchaseOrder {
   tenant   Tenant              @relation(fields: [tenantId], references: [id])
   supplier Supplier            @relation(fields: [supplierId], references: [id])
   lines    PurchaseOrderLine[]
-}
-
-enum POStatus {
-  DRAFT
-  SENT
-  CONFIRMED
-  RECEIVED
-  CANCELLED
 }
 
 model PurchaseOrderLine {
