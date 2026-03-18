@@ -34,10 +34,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
-    Resend({
-      apiKey: process.env.RESEND_API_KEY!,
-      from: process.env.FROM_EMAIL ?? "noreply@doughflow.app",
-    }),
+    ...(process.env.RESEND_API_KEY
+      ? [Resend({
+          apiKey: process.env.RESEND_API_KEY,
+          from: process.env.FROM_EMAIL ?? "noreply@doughflow.app",
+        })]
+      : []),
     ...devProvider,
   ],
   pages: {
