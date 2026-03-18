@@ -83,7 +83,7 @@ export function IngredientFormDialog({
     defaultValues: ingredient
       ? {
           name: ingredient.name,
-          unit: ingredient.unit,
+          unit: ingredient.unit as FormValues["unit"],
           currentStock: ingredient.currentStock,
           reorderPoint: ingredient.reorderPoint,
           reorderQty: ingredient.reorderQty,
