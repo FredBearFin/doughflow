@@ -16,7 +16,7 @@ import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { href: "/", label: "Overview", icon: LayoutDashboard },
+  { href: "/overview", label: "Overview", icon: LayoutDashboard },
   { href: "/pantry", label: "Pantry", icon: Package },
   { href: "/recipes", label: "Recipes", icon: UtensilsCrossed },
   { href: "/orders", label: "Orders", icon: ShoppingCart },
