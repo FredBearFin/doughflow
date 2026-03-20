@@ -31,22 +31,23 @@ export default function LandingPage() {
       <section className="max-w-4xl mx-auto px-8 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-1.5 text-sm font-medium text-amber-800 mb-6">
           <span className="h-2 w-2 rounded-full bg-amber-500" />
-          3× ROI from day one
+          For home bakers, cottage sellers &amp; market vendors
         </div>
         <h1 className="text-5xl font-bold text-stone-900 leading-tight mb-6">
-          Stop guessing.<br />
-          <span className="text-amber-500">Start baking smarter.</span>
+          Know what to bake<br />
+          <span className="text-amber-500">before Saturday&apos;s market.</span>
         </h1>
         <p className="text-xl text-stone-500 max-w-2xl mx-auto mb-8">
-          DoughFlow is the lean inventory engine for bakeries. Track ingredients,
-          automate reorders, eliminate waste — and see your real COGS per recipe.
+          DoughFlow is the baking brain for home bakers, cottage food sellers, and farmers
+          market vendors. Know your real cost per batch, track what you have, and never
+          over-prep or run out again.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/login"
             className="inline-flex items-center justify-center h-14 rounded-xl bg-amber-500 px-8 text-base font-semibold text-white hover:bg-amber-600 transition-colors shadow-lg shadow-amber-200"
           >
-            Start free trial
+            Get started free
           </Link>
           <Link
             href="/pricing"
@@ -55,7 +56,7 @@ export default function LandingPage() {
             See pricing
           </Link>
         </div>
-        <p className="text-sm text-stone-400 mt-4">No credit card · 14-day trial</p>
+        <p className="text-sm text-stone-400 mt-4">Free forever · No credit card required</p>
       </section>
 
       {/* Feature grid */}
@@ -65,32 +66,32 @@ export default function LandingPage() {
             {
               icon: "📦",
               title: "Digital Pantry",
-              desc: "Real-time stock levels for every ingredient. Color-coded alerts before you run out.",
+              desc: "Know exactly what you have before you bake 30 sourdough loaves for Saturday. Color-coded alerts before you run short.",
             },
             {
               icon: "🧮",
-              title: "True COGS per Recipe",
-              desc: "See the actual cost breakdown per batch. Know your margin before you price.",
+              title: "Real Cost per Recipe",
+              desc: "See the actual cost per batch — flour, butter, eggs, packaging. Know your real margin before you set your market price.",
             },
             {
-              icon: "🔁",
-              title: "Auto Reorder",
-              desc: "Statistical reorder points based on your actual sales history. Draft POs created for you.",
+              icon: "📅",
+              title: "Bake Plan",
+              desc: "DoughFlow looks at your sales history and tells you exactly what to prep before market day. Stop over-baking. Stop running out.",
             },
             {
               icon: "📋",
-              title: "BOM Explosion",
-              desc: "Log a sale and every ingredient is automatically deducted — down to yield loss.",
+              title: "Ingredient Tracking",
+              desc: "Log a sale and every ingredient is automatically deducted from your pantry — down to yield loss. No more manual spreadsheets.",
             },
             {
               icon: "🗑️",
               title: "Waste Tracking",
-              desc: "iPad-optimized waste logging. See your waste cost per ingredient per week.",
+              desc: "Log what didn't sell at Saturday's market. See your real waste cost per week and bake smarter next time.",
             },
             {
               icon: "📊",
-              title: "Analytics",
-              desc: "Revenue vs COGS trends. Top-selling products. Waste heat map. All in one view.",
+              title: "Market Analytics",
+              desc: "Best-selling products, waste trends, revenue by market day. Know what's working before you prep for next weekend.",
             },
           ].map((f) => (
             <div
@@ -109,10 +110,10 @@ export default function LandingPage() {
       <section className="bg-amber-500 py-16">
         <div className="max-w-2xl mx-auto text-center px-8">
           <h2 className="text-3xl font-bold text-white mb-3">
-            A bakery doing $50k/month saves $500+
+            Stop guessing. Start selling smarter.
           </h2>
           <p className="text-amber-100 mb-8">
-            That&apos;s 3× ROI on the $149/month flat fee — from eliminating waste alone.
+            Built for home bakers, cottage food sellers, and farmers market vendors who are serious about their numbers.
           </p>
           <Link
             href="/login"
@@ -124,7 +125,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="text-center py-8 text-sm text-stone-400">
-        © 2026 DoughFlow · Built for bakeries
+        © 2026 DoughFlow · Built for home bakers, cottage food sellers &amp; market vendors
       </footer>
     </div>
   );
