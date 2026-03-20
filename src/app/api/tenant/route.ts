@@ -1,60 +1,68 @@
 /**
  * Tenant resolution API route — GET /api/tenant
  *
- * Returns the tenantId (and tenant record) associated with the currently
- * authenticated user. This route exists because DoughFlow is a multi-tenant
- * SaaS — each user belongs to exactly one tenant (bakery), and all tRPC
- * queries are scoped to a tenantId for data isolation.
+ * Returns the tenantId associated with the currently authenticated user.
+ * Called once by the `useTenantId` hook after sign-in; result is cached
+ * client-side for the lifetime of the browser session.
  *
- * The client-side `useTenantId` hook calls this endpoint once after the user
- * signs in, caches the result in a module-level variable, and makes it
- * available throughout the React component tree.
+ * AUTO-PROVISIONING:
+ *   If the authenticated user has no tenant yet (first sign-in via Google),
+ *   this route automatically creates one for them. The bakery name defaults
+ *   to "[Name]'s Bakery" and can be changed later in /settings.
+ *   This means every user who signs in always gets a working tenant —
+ *   no manual seeding or admin step required.
  *
  * Response:
- *   - 401 { error: "Unauthorized" }   if no valid session exists
- *   - 200 { tenantId: null }           if the user has no tenant association
- *     (e.g. a new user who hasn't been onboarded yet)
- *   - 200 { tenantId: string, tenant: Tenant }  normal case
- *
- * Security note: because this route reads from the server session (JWT cookie),
- * it cannot be spoofed by a client passing a fake userId. Tenant scoping for
- * all data queries is handled at the tRPC procedure level using the same session.
+ *   - 401 { error: "Unauthorized" }  — no valid session
+ *   - 200 { tenantId: string, tenant: Tenant }  — always returned for auth'd users
  */
 
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-/**
- * GET handler — resolves the tenant for the currently authenticated user.
- * No request body or query parameters are required; the user is identified
- * solely from the session cookie.
- */
 export async function GET() {
-  // Read the server-side session (JWT strategy — no DB lookup needed for the session)
   const session = await auth();
 
-  // Reject unauthenticated requests immediately
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  /**
-   * Look up the TenantUser join record for this user.
-   * TenantUser is the many-to-many join between User and Tenant.
-   * findFirst is safe here because each user belongs to at most one tenant
-   * in the current data model.
-   */
-  const tenantUser = await prisma.tenantUser.findFirst({
-    where: { userId: session.user.id },
-    include: { tenant: true }, // Include the full tenant record for display purposes
+  // Check if this user already has a tenant
+  const existing = await prisma.tenantUser.findFirst({
+    where:   { userId: session.user.id },
+    include: { tenant: true },
   });
 
-  // User exists but has not been assigned to a tenant yet
-  if (!tenantUser) {
-    return NextResponse.json({ tenantId: null });
+  if (existing) {
+    return NextResponse.json({ tenantId: existing.tenantId, tenant: existing.tenant });
   }
 
-  // Return the tenantId and tenant details for the client to cache
-  return NextResponse.json({ tenantId: tenantUser.tenantId, tenant: tenantUser.tenant });
+  // ── First sign-in: auto-provision a tenant ────────────────────────────────
+  // Generate a URL-safe slug from the user's name + a random suffix so it's unique.
+  const rawName  = session.user.name ?? session.user.email ?? "My Bakery";
+  const baseName = rawName.split("@")[0]; // drop email domain if that's all we have
+  const baseSlug = baseName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")  // replace non-alphanumeric with hyphens
+    .replace(/^-+|-+$/g, "")      // trim leading/trailing hyphens
+    .slice(0, 30);                 // keep it short
+  const suffix = Math.random().toString(36).slice(2, 6); // 4-char random suffix
+  const slug   = `${baseSlug || "bakery"}-${suffix}`;
+
+  const tenant = await prisma.tenant.create({
+    data: {
+      name:  `${baseName}'s Bakery`,
+      slug,
+      plan:  "TRIAL",
+      users: {
+        create: {
+          userId: session.user.id,
+          role:   "OWNER",
+        },
+      },
+    },
+  });
+
+  return NextResponse.json({ tenantId: tenant.id, tenant });
 }
