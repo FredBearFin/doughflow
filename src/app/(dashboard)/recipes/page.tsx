@@ -7,28 +7,77 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
+import { useTier } from "@/hooks/useTier";
 import { formatCurrency } from "@/lib/utils";
 import { calculateRecipeCOGS } from "@/lib/cogs";
-import { Plus, UtensilsCrossed } from "lucide-react";
+import { Plus, UtensilsCrossed, Lock } from "lucide-react";
 import { RecipeFormDialog } from "@/components/recipes/RecipeFormDialog";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 export default function RecipesPage() {
   const tenantId = useTenantId();
+  const tier = useTier();
   const [showCreate, setShowCreate] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const { data: recipes, isLoading } = trpc.recipe.getAll.useQuery(
     { tenantId: tenantId! },
     { enabled: !!tenantId }
   );
 
+  const recipeCount = recipes?.length ?? 0;
+  const atLimit = !tier.isLoading && !tier.canAddRecipe(recipeCount);
+
+  function handleNewRecipe() {
+    if (atLimit) {
+      setShowUpgrade(true);
+    } else {
+      setShowCreate(true);
+    }
+  }
+
+  // Label shown on the button when at limit so it's clear why the lock is there
+  const addButtonLabel = atLimit
+    ? `Limit reached (${tier.recipeLimit}/${tier.recipeLimit})`
+    : "New Recipe";
+
   return (
     <div>
       <TopBar title="Recipes">
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4" />
-          New Recipe
+        <Button onClick={handleNewRecipe} variant={atLimit ? "outline" : "default"}>
+          {atLimit ? (
+            <Lock className="h-4 w-4 text-stone-400" />
+          ) : (
+            <Plus className="h-4 w-4" />
+          )}
+          {addButtonLabel}
         </Button>
       </TopBar>
+
+      {/* Soft limit banner — shows how many slots remain */}
+      {!tier.isLoading && tier.recipeLimit !== null && (
+        <div
+          className={`mx-6 mt-4 rounded-lg px-4 py-2.5 text-sm flex items-center justify-between ${
+            atLimit
+              ? "bg-amber-50 border border-amber-200 text-amber-800"
+              : recipeCount >= tier.recipeLimit - 1
+              ? "bg-stone-50 border border-stone-200 text-stone-500"
+              : "hidden"
+          }`}
+        >
+          <span>
+            {atLimit
+              ? `You've used all ${tier.recipeLimit} recipe slots on the Free plan.`
+              : `${tier.recipeLimit - recipeCount} recipe slot${tier.recipeLimit - recipeCount === 1 ? "" : "s"} remaining on the Free plan.`}
+          </span>
+          <button
+            onClick={() => setShowUpgrade(true)}
+            className="ml-4 text-amber-600 font-medium hover:underline whitespace-nowrap"
+          >
+            Upgrade →
+          </button>
+        </div>
+      )}
 
       <div className="p-6">
         {isLoading ? (
@@ -41,7 +90,7 @@ export default function RecipesPage() {
           <div className="flex flex-col items-center justify-center py-20">
             <UtensilsCrossed className="h-12 w-12 text-stone-300 mb-4" />
             <p className="text-stone-400 text-lg mb-4">No recipes yet</p>
-            <Button onClick={() => setShowCreate(true)}>
+            <Button onClick={handleNewRecipe}>
               <Plus className="h-4 w-4" />
               Create your first recipe
             </Button>
@@ -100,6 +149,7 @@ export default function RecipesPage() {
         )}
       </div>
 
+      {/* Recipe form — only mounts when allowed */}
       {tenantId && (
         <RecipeFormDialog
           tenantId={tenantId}
@@ -107,6 +157,16 @@ export default function RecipesPage() {
           onOpenChange={setShowCreate}
         />
       )}
+
+      {/* Upgrade modal — fires when limit is hit */}
+      <UpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        title="Recipe limit reached"
+        limitLine={`Free accounts can track up to ${tier.recipeLimit ?? 3} recipes.`}
+        unlockLine="Upgrade to Cottage for up to 10 recipes, Bake Plan forecasts, full cost tracking, and more — just $6/mo."
+        ctaLabel="Upgrade to Cottage — $6/mo"
+      />
     </div>
   );
 }
