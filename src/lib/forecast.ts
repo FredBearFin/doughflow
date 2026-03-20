@@ -1,4 +1,3 @@
-/**
  * forecast.ts — Pure demand forecasting math module
  *
  * Zero Prisma imports. All functions are pure TypeScript operating on plain data.
