@@ -189,6 +189,39 @@ model Sale {
   recipe Recipe @relation(fields: [recipeId], references: [id])
 }
 
+// ─── Subscriptions ───────────────────────────────────────────────────────────
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  tier                 SubscriptionTier   @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_subscriptions")
+}
+
+enum SubscriptionTier {
+  FREE     @map("free")
+  COTTAGE  @map("cottage")
+  BAKER    @map("baker")
+  ARTISAN  @map("artisan")
+}
+
+enum SubscriptionStatus {
+  ACTIVE     @map("active")
+  TRIALING   @map("trialing")
+  PAST_DUE   @map("past_due")
+  CANCELED   @map("canceled")
+  INCOMPLETE @map("incomplete")
+}
+
 // ─── Auth (NextAuth) ──────────────────────────────────────────────────────────
 
 model User {
@@ -200,6 +233,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   tenants       TenantUser[]
+  subscription  Subscription?
 }
 
 model Account {
