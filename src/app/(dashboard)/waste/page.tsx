@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
 import { ClipboardList, CheckCircle2 } from "lucide-react";
 
 // Form validation schema
@@ -218,9 +218,17 @@ export default function WastePage() {
                           {s.totalBaked} baked · {s.totalSold} sold · {s.days} day{s.days !== 1 ? "s" : ""}
                         </p>
                       </div>
-                      <span className="tabular-nums font-semibold text-red-600">
-                        {s.totalWasted} wasted
-                      </span>
+                      <div className="text-right">
+                        <p className="tabular-nums font-semibold text-red-600">
+                          {s.totalWasted} wasted
+                        </p>
+                        {/* Show dollar cost of waste when ingredient costs are configured */}
+                        {s.costOfWaste > 0 && (
+                          <p className="tabular-nums text-xs text-red-400">
+                            {formatCurrency(s.costOfWaste)}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

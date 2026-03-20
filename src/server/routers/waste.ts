@@ -73,34 +73,53 @@ export const wasteRouter = router({
       });
     }),
 
-  // Aggregate waste (qtyBaked - qtySold) by product over N days, sorted by waste desc
+  // Aggregate waste (qtyBaked - qtySold) by product over N days, sorted by waste desc.
+  // Includes costOfWaste (in dollars) when ingredients have costPerUnit configured.
   getSummary: protectedProcedure
     .input(z.object({ tenantId: z.string(), days: z.number().int().default(30) }))
     .query(async ({ input, ctx }) => {
       const since = new Date();
       since.setDate(since.getDate() - input.days);
 
+      // Include recipe → BOM → ingredient so we can compute ingredient cost of waste
       const logs = await ctx.prisma.wasteLog.findMany({
         where:   { tenantId: input.tenantId, date: { gte: since } },
-        include: { recipe: true },
+        include: {
+          recipe: {
+            include: {
+              ingredients: { include: { ingredient: true } },
+            },
+          },
+        },
       });
 
-      // Group by product and accumulate baked/sold/wasted totals
+      // Group by product and accumulate baked/sold/wasted/cost totals
       const byProduct = new Map<string, {
-        productName: string;
-        totalBaked:  number;
-        totalSold:   number;
-        totalWasted: number;
-        days:        number;
+        productName:  string;
+        totalBaked:   number;
+        totalSold:    number;
+        totalWasted:  number;
+        costOfWaste:  number; // $0 when no ingredient costs configured
+        days:         number;
       }>();
 
       for (const log of logs) {
-        const wasted   = log.qtyBaked - log.qtySold;
+        const wasted        = log.qtyBaked - log.qtySold;
+        const batchesWasted = wasted / log.recipe.batchSize;
+
+        // Dollar cost of wasted product based on BOM ingredient costs
+        const costOfWaste = batchesWasted > 0
+          ? log.recipe.ingredients.reduce((s, line) => {
+              return s + line.quantity * batchesWasted * (line.ingredient.costPerUnit ?? 0);
+            }, 0)
+          : 0;
+
         const existing = byProduct.get(log.recipeId);
         if (existing) {
           existing.totalBaked  += log.qtyBaked;
           existing.totalSold   += log.qtySold;
           existing.totalWasted += wasted;
+          existing.costOfWaste += costOfWaste;
           existing.days++;
         } else {
           byProduct.set(log.recipeId, {
@@ -108,6 +127,7 @@ export const wasteRouter = router({
             totalBaked:  log.qtyBaked,
             totalSold:   log.qtySold,
             totalWasted: wasted,
+            costOfWaste,
             days: 1,
           });
         }

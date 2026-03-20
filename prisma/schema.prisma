@@ -47,6 +47,7 @@ model Ingredient {
   unit          String   @default("GRAM")  // GRAM | KILOGRAM | MILLILITER | LITER | EACH
   currentStock  Float    @default(0)
   reorderPoint  Float    @default(0)       // Low-stock alert threshold
+  costPerUnit   Float?                     // Optional: cost per 1 unit in local currency (e.g. $0.009 per gram)
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

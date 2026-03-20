@@ -1,7 +1,23 @@
-"use client";
+/**
+ * IngredientFormDialog — create or edit a pantry ingredient.
+ *
+ * Fields:
+ *   - Name (required)
+ *   - Unit (required enum: GRAM | KILOGRAM | MILLILITER | LITER | EACH)
+ *   - Current Stock (required, min 0)
+ *   - Low Stock Alert At (reorderPoint, min 0)
+ *   - Cost per unit (optional — enables dollar-value waste analytics)
+ *
+ * The cost field is optional. When set, the analytics and waste pages will
+ * show the dollar value of waste (e.g. "$47 wasted this week") in addition
+ * to unit counts. Leave it blank to keep the app unit-only.
+ *
+ * In edit mode the dialog is pre-populated with the ingredient's current values.
+ * After success, both the list and detail queries are invalidated so the UI
+ * reflects the change immediately.
+ */
 
-// IngredientFormDialog — create or edit a pantry ingredient.
-// Simplified: just name, unit, current stock, and low-stock alert threshold.
+"use client";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,11 +41,16 @@ import {
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 
+/**
+ * Zod schema for the ingredient form.
+ * costPerUnit is optional — an empty string input should be treated as null/undefined.
+ */
 const schema = z.object({
   name:         z.string().min(1, "Name required"),
   unit:         z.enum(["GRAM", "KILOGRAM", "MILLILITER", "LITER", "EACH"]),
   currentStock: z.number().min(0),
-  reorderPoint: z.number().min(0), // Low-stock alert threshold
+  reorderPoint: z.number().min(0),
+  costPerUnit:  z.number().min(0).nullable().optional(), // null = not set
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -78,19 +99,37 @@ export function IngredientFormDialog({
           unit:         ingredient.unit as FormValues["unit"],
           currentStock: ingredient.currentStock,
           reorderPoint: ingredient.reorderPoint,
+          costPerUnit:  ingredient.costPerUnit ?? undefined,
         }
       : {
           unit:         "GRAM",
           currentStock: 0,
           reorderPoint: 0,
+          costPerUnit:  undefined,
         },
   });
 
+  const selectedUnit = watch("unit");
+
+  /**
+   * Unit label shown in the cost field placeholder and label.
+   * e.g. "GRAM" → "g", "EACH" → "each", "MILLILITER" → "mL"
+   */
+  const unitLabel: Record<string, string> = {
+    GRAM:       "g",
+    KILOGRAM:   "kg",
+    MILLILITER: "mL",
+    LITER:      "L",
+    EACH:       "each",
+  };
+
   const onSubmit = (data: FormValues) => {
+    // Convert null/undefined costPerUnit to undefined for the API
+    const costPerUnit = data.costPerUnit ?? undefined;
     if (isEdit) {
-      update.mutate({ id: ingredient.id, tenantId, ...data });
+      update.mutate({ id: ingredient.id, tenantId, ...data, costPerUnit });
     } else {
-      create.mutate({ tenantId, ...data });
+      create.mutate({ tenantId, ...data, costPerUnit });
     }
   };
 
@@ -155,6 +194,34 @@ export function IngredientFormDialog({
                 {...register("reorderPoint", { valueAsNumber: true })}
               />
             </div>
+          </div>
+
+          {/* Optional cost per unit — enables dollar waste analytics */}
+          <div className="space-y-1.5">
+            <Label htmlFor="costPerUnit">
+              Cost per {unitLabel[selectedUnit] ?? selectedUnit.toLowerCase()}{" "}
+              <span className="text-stone-400 font-normal">(optional)</span>
+            </Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">$</span>
+              <Input
+                id="costPerUnit"
+                type="number"
+                step="0.0001"
+                min="0"
+                placeholder="e.g. 0.009"
+                className="pl-7"
+                {...register("costPerUnit", {
+                  setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
+                })}
+              />
+            </div>
+            <p className="text-xs text-stone-400">
+              Set this to see the dollar value of waste in analytics
+            </p>
+            {errors.costPerUnit && (
+              <p className="text-xs text-red-600">{errors.costPerUnit.message}</p>
+            )}
           </div>
 
           <div className="flex gap-2 justify-end pt-2">

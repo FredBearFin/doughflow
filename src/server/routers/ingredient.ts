@@ -27,7 +27,7 @@ export const ingredientRouter = router({
       return ingredient;
     }),
 
-  // Create a new ingredient (simplified: no SKU, no cost, no supplier, no lead time)
+  // Create a new ingredient
   create: protectedProcedure
     .input(
       z.object({
@@ -36,6 +36,7 @@ export const ingredientRouter = router({
         unit:         z.enum(["GRAM", "KILOGRAM", "MILLILITER", "LITER", "EACH"]),
         currentStock: z.number().min(0).default(0),
         reorderPoint: z.number().min(0).default(0), // Low-stock alert threshold
+        costPerUnit:  z.number().min(0).optional(),  // Optional: cost per unit in local currency
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -51,6 +52,7 @@ export const ingredientRouter = router({
         name:         z.string().min(1).optional(),
         unit:         z.enum(["GRAM", "KILOGRAM", "MILLILITER", "LITER", "EACH"]).optional(),
         reorderPoint: z.number().min(0).optional(),
+        costPerUnit:  z.number().min(0).nullable().optional(), // null clears the cost
         active:       z.boolean().optional(),
       })
     )

@@ -5,12 +5,14 @@ import { ingredientRouter } from "./ingredient";
 import { recipeRouter } from "./recipe";
 import { wasteRouter } from "./waste";
 import { analyticsRouter } from "./analytics";
+import { tenantRouter } from "./tenant";
 
 export const appRouter = router({
   ingredient: ingredientRouter, // Pantry ingredient CRUD + stock adjustments
   recipe:     recipeRouter,     // Product CRUD + BOM ingredient management
   waste:      wasteRouter,      // End-of-day bake/waste logging
   analytics:  analyticsRouter,  // Demand forecast, waste analytics, KPIs
+  tenant:     tenantRouter,     // Bakery account info + settings
 });
 
 // Shared type for end-to-end type safety between server and client

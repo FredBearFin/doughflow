@@ -1,13 +1,21 @@
-"use client";
+/**
+ * Analytics page — /analytics
+ *
+ * Shows waste trends, day-of-week patterns, and per-product waste breakdowns.
+ * Focused entirely on operational waste insights (no revenue/COGS).
+ *
+ * When ingredient costs are configured (via the pantry form), the page also
+ * shows the dollar value of waste — e.g. "$47.23 wasted this month".
+ * Without costs, it falls back to showing unit counts only.
+ */
 
-// Analytics page — /analytics
-// Shows waste trends, day-of-week patterns, and per-product waste breakdowns.
-// Focused entirely on operational waste insights (no revenue/COGS).
+"use client";
 
 import { TopBar } from "@/components/layout/TopBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
+import { formatCurrency } from "@/lib/utils";
 import {
   BarChart,
   Bar,
@@ -33,18 +41,22 @@ export default function AnalyticsPage() {
     { enabled: !!tenantId }
   );
 
-  // Total units wasted in last 30 days
+  // Aggregate KPI values
   const totalWasted = wasteByProduct?.reduce((s, p) => s + p.totalWasted, 0) ?? 0;
   const totalBaked  = wasteByProduct?.reduce((s, p) => s + p.totalBaked,  0) ?? 0;
   const wasteRate   = totalBaked > 0 ? ((totalWasted / totalBaked) * 100).toFixed(1) : "0";
+
+  // Total dollar cost of waste (only non-zero when ingredient costs are configured)
+  const totalCost    = wasteByProduct?.reduce((s, p) => s + p.costOfWaste, 0) ?? 0;
+  const hasCostData  = totalCost > 0;
 
   return (
     <div>
       <TopBar title="Analytics" />
 
       <div className="p-6 space-y-6">
-        {/* KPI cards */}
-        <div className="grid grid-cols-3 gap-4">
+        {/* KPI cards — 2×2 on mobile, 4 in a row on md+ */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-5">
               <p className="text-sm text-stone-500 mb-1">Units Wasted (30d)</p>
@@ -61,6 +73,22 @@ export default function AnalyticsPage() {
             <CardContent className="p-5">
               <p className="text-sm text-stone-500 mb-1">Waste Rate (30d)</p>
               <p className="tabular-nums text-2xl font-bold text-amber-600">{wasteRate}%</p>
+            </CardContent>
+          </Card>
+
+          {/* Waste cost card — shows dollars if costs configured, otherwise a prompt */}
+          <Card className={hasCostData ? "border-red-100" : undefined}>
+            <CardContent className="p-5">
+              <p className="text-sm text-stone-500 mb-1">Waste Cost (30d)</p>
+              {hasCostData ? (
+                <p className="tabular-nums text-2xl font-bold text-red-600">
+                  {formatCurrency(totalCost)}
+                </p>
+              ) : (
+                <p className="text-sm text-stone-400 mt-1 leading-snug">
+                  Set ingredient costs in Pantry to see $
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -117,6 +145,12 @@ export default function AnalyticsPage() {
                       <p className="tabular-nums font-semibold text-red-600">
                         {p.totalWasted} wasted
                       </p>
+                      {/* Show dollar cost if ingredient costs are configured */}
+                      {p.costOfWaste > 0 && (
+                        <p className="tabular-nums text-xs text-red-400">
+                          {formatCurrency(p.costOfWaste)}
+                        </p>
+                      )}
                       <p className="text-xs text-stone-400">
                         {p.wasteRate.toFixed(1)}% waste rate
                       </p>
