@@ -19,7 +19,8 @@ export const ingredientRouter = router({
     .input(z.object({ id: z.string(), tenantId: z.string() }))
     .query(async ({ input, ctx }) => {
       const ingredient = await ctx.prisma.ingredient.findFirst({
-        where: { id: input.id, tenantId: input.tenantId },
+        where:   { id: input.id, tenantId: input.tenantId },
+        include: { supplier: true, ledgerEntries: { orderBy: { createdAt: "desc" }, take: 50 } },
       });
       if (!ingredient) throw new TRPCError({ code: "NOT_FOUND" });
       return ingredient;
