@@ -119,7 +119,7 @@ export default function LandingPage() {
             href="/login"
             className="inline-flex items-center justify-center h-14 rounded-xl bg-white px-8 text-base font-semibold text-amber-600 hover:bg-amber-50 transition-colors"
           >
-            Start your free trial
+            Get started free
           </Link>
         </div>
       </section>
