@@ -1,14 +1,39 @@
 "use client";
 
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { TopBar } from "@/components/layout/TopBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { Users } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { useTenantId } from "@/lib/useTenant";
 
 export default function SettingsPage() {
+  const tenantId = useTenantId();
+
+  const { data: tenant } = trpc.tenant.get.useQuery(
+    { tenantId: tenantId! },
+    { enabled: !!tenantId }
+  );
+
+  const utils = trpc.useUtils();
+  const update = trpc.tenant.update.useMutation({
+    onSuccess: () => utils.tenant.get.invalidate({ tenantId: tenantId! }),
+  });
+
+  const { register, handleSubmit, reset } = useForm<{ name: string }>();
+
+  useEffect(() => {
+    if (tenant) reset({ name: tenant.name });
+  }, [tenant, reset]);
+
+  const onSubmit = (data: { name: string }) => {
+    if (!tenantId) return;
+    update.mutate({ tenantId, name: data.name });
+  };
+
   return (
     <div>
       <TopBar title="Settings" />
@@ -18,31 +43,36 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle>Bakery Info</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Bakery Name</Label>
-              <Input placeholder="Your bakery name" />
-            </div>
-            <Button>Save Changes</Button>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Bakery Name</Label>
+                <Input placeholder="Your bakery name" {...register("name", { required: true })} />
+              </div>
+              <Button type="submit" disabled={update.isPending}>
+                {update.isPending ? "Saving…" : "Save Changes"}
+              </Button>
+            </form>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Suppliers</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-stone-500 mb-3">
-              Manage your supplier directory for automated purchase orders.
-            </p>
-            <Link href="/settings/suppliers">
-              <Button variant="outline">
-                <Users className="h-4 w-4" />
-                Manage Suppliers
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        {tenant && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Account</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-stone-600">
+              <div className="flex justify-between">
+                <span className="text-stone-400">Slug</span>
+                <span className="font-mono">{tenant.slug}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-stone-400">Plan</span>
+                <span>{tenant.plan}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

@@ -16,7 +16,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -24,7 +26,7 @@ import { trpc } from "@/lib/trpc";
 
 const schema = z.object({
   name: z.string().min(1, "Name required"),
-  unit: z.enum(["GRAM", "KILOGRAM", "MILLILITER", "LITER", "EACH"]),
+  unit: z.enum(["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH", "GRAM", "KILOGRAM", "MILLILITER", "LITER"]),
   currentStock: z.number().min(0),
   reorderPoint: z.number().min(0),
   reorderQty: z.number().min(0),
@@ -91,7 +93,7 @@ export function IngredientFormDialog({
           costPerUnit: ingredient.costPerUnit,
           sku: ingredient.sku ?? undefined,
         }
-      : { unit: "GRAM", currentStock: 0, reorderPoint: 0, reorderQty: 0, leadTimeDays: 3, costPerUnit: 0 },
+      : { unit: "LB", currentStock: 0, reorderPoint: 0, reorderQty: 0, leadTimeDays: 3, costPerUnit: 0 },
   });
 
   const onSubmit = (data: FormValues) => {
@@ -129,11 +131,23 @@ export function IngredientFormDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="GRAM">Gram</SelectItem>
-                  <SelectItem value="KILOGRAM">Kilogram</SelectItem>
-                  <SelectItem value="MILLILITER">Milliliter</SelectItem>
-                  <SelectItem value="LITER">Liter</SelectItem>
-                  <SelectItem value="EACH">Each</SelectItem>
+                  <SelectGroup>
+                    <SelectLabel>US Bakery</SelectLabel>
+                    <SelectItem value="LB">Pound (lb)</SelectItem>
+                    <SelectItem value="OZ">Ounce (oz)</SelectItem>
+                    <SelectItem value="FL_OZ">Fluid Ounce (fl oz)</SelectItem>
+                    <SelectItem value="CUP">Cup</SelectItem>
+                    <SelectItem value="TBSP">Tablespoon (tbsp)</SelectItem>
+                    <SelectItem value="TSP">Teaspoon (tsp)</SelectItem>
+                    <SelectItem value="EACH">Each</SelectItem>
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Metric</SelectLabel>
+                    <SelectItem value="GRAM">Gram (g)</SelectItem>
+                    <SelectItem value="KILOGRAM">Kilogram (kg)</SelectItem>
+                    <SelectItem value="MILLILITER">Milliliter (ml)</SelectItem>
+                    <SelectItem value="LITER">Liter (L)</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>

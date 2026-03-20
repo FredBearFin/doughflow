@@ -49,6 +49,13 @@ export function getStockStatus(ingredient: Ingredient): StockStatus {
 export function formatUnit(qty: number, unit: string): string {
   const rounded = Math.round(qty * 10) / 10;
   switch (unit) {
+    case "LB":    return `${rounded} lb`;
+    case "OZ":    return `${rounded} oz`;
+    case "FL_OZ": return `${rounded} fl oz`;
+    case "CUP":   return rounded === 1 ? "1 cup" : `${rounded} cups`;
+    case "TBSP":  return `${rounded} tbsp`;
+    case "TSP":   return `${rounded} tsp`;
+    case "EACH":  return `${Math.round(qty)} ea`;
     case "GRAM":
       return qty >= 1000 ? `${Math.round(qty / 100) / 10} kg` : `${rounded} g`;
     case "KILOGRAM":
@@ -57,8 +64,6 @@ export function formatUnit(qty: number, unit: string): string {
       return qty >= 1000 ? `${Math.round(qty / 100) / 10} L` : `${rounded} mL`;
     case "LITER":
       return `${rounded} L`;
-    case "EACH":
-      return `${rounded} ea`;
     default:
       return `${rounded} ${unit.toLowerCase()}`;
   }
