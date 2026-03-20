@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
+import { autoForecast } from "@/lib/forecast";
 
 export const analyticsRouter = router({
   cogsOverTime: protectedProcedure
@@ -151,6 +152,109 @@ export const analyticsRouter = router({
         recentRevenue,
         recentWasteCost,
       };
+    }),
+
+  /**
+   * Core feature: what to bake for the next `horizon` days.
+   * - Runs autoForecast() on each recipe's 90-day sales history
+   * - Explodes the BOM to compute ingredient requirements
+   * - Cross-references current stock to flag shortfalls
+   */
+  productionPlan: protectedProcedure
+    .input(z.object({ tenantId: z.string(), horizon: z.number().int().min(1).max(14).default(7) }))
+    .query(async ({ input, ctx }) => {
+      const { tenantId, horizon } = input;
+      const HISTORY_DAYS = 90;
+      const since = new Date();
+      since.setDate(since.getDate() - HISTORY_DAYS);
+
+      const [recipes, allSales, ingredients] = await Promise.all([
+        ctx.prisma.recipe.findMany({
+          where: { tenantId, active: true },
+          include: { ingredients: { include: { ingredient: true } } },
+        }),
+        ctx.prisma.sale.findMany({
+          where: { tenantId, soldAt: { gte: since } },
+          orderBy: { soldAt: "asc" },
+        }),
+        ctx.prisma.ingredient.findMany({ where: { tenantId, active: true } }),
+      ]);
+
+      const stockMap = new Map(ingredients.map((i) => [i.id, i.currentStock]));
+
+      // Horizon dates (tomorrow = day 1)
+      const horizonDates = Array.from({ length: horizon }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() + i + 1);
+        return d.toISOString().split("T")[0];
+      });
+
+      const plans = recipes.map((recipe) => {
+        // Dense daily sales series
+        const byDay = new Map<string, number>();
+        for (const s of allSales.filter((s) => s.recipeId === recipe.id)) {
+          const day = s.soldAt.toISOString().split("T")[0];
+          byDay.set(day, (byDay.get(day) ?? 0) + s.qty);
+        }
+        const series: number[] = [];
+        for (let i = 0; i < HISTORY_DAYS; i++) {
+          const d = new Date(since);
+          d.setDate(d.getDate() + i);
+          series.push(byDay.get(d.toISOString().split("T")[0]) ?? 0);
+        }
+
+        const fc = autoForecast(series, horizon);
+        const weeklyForecast = horizonDates.map((date, i) => ({
+          date,
+          units: Math.max(0, Math.round(fc.forecastHorizon[i])),
+        }));
+        const tomorrowUnits = weeklyForecast[0].units;
+
+        return {
+          recipeId: recipe.id,
+          recipeName: recipe.name,
+          batchSize: recipe.batchSize,
+          method: fc.method,
+          metrics: fc.metrics,
+          tomorrowUnits,
+          weeklyForecast,
+          bom: recipe.ingredients.map((line) => ({
+            ingredientId: line.ingredientId,
+            name: line.ingredient.name,
+            unit: line.ingredient.unit,
+            qtyPerBatch: line.quantity,
+            requiredTomorrow: tomorrowUnits * line.quantity,
+          })),
+        };
+      });
+
+      // Aggregate ingredient requirements for tomorrow
+      const needMap = new Map<
+        string,
+        { name: string; unit: string; required: number; available: number }
+      >();
+      for (const plan of plans) {
+        for (const line of plan.bom) {
+          if (line.requiredTomorrow === 0) continue;
+          const existing = needMap.get(line.ingredientId);
+          if (existing) {
+            existing.required += line.requiredTomorrow;
+          } else {
+            needMap.set(line.ingredientId, {
+              name: line.name,
+              unit: line.unit,
+              required: line.requiredTomorrow,
+              available: stockMap.get(line.ingredientId) ?? 0,
+            });
+          }
+        }
+      }
+
+      const ingredientCheck = Array.from(needMap.values())
+        .map((i) => ({ ...i, deficit: Math.max(0, i.required - i.available) }))
+        .sort((a, b) => b.deficit - a.deficit); // worst shortfalls first
+
+      return { plans, ingredientCheck, horizonDates };
     }),
 
   supplier: protectedProcedure

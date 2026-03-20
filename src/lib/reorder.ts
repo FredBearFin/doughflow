@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { forecastDailyDemand } from "./forecast";
 
 export type ReorderAlert = {
   ingredient: {
@@ -18,11 +19,12 @@ export type ReorderAlert = {
 };
 
 /**
- * Lead Time Demand formula:
- * Reorder Point = (Average Daily Usage × Lead Time Days) + Safety Stock
+ * Reorder Point = (avg forecasted daily usage × lead time) + safety stock
+ * Safety Stock  = Z × σ̂ × √(lead time)
  *
- * Safety Stock = Z × σ(daily usage) × √(lead time)
- * Where Z = 1.65 for 95% service level
+ * σ̂ is the forecast RMSE — captures model uncertainty during lead time,
+ * which is more accurate than raw historical σ.
+ * Z = 1.65 → 95 % service level.
  */
 export function calculateReorderPoint(params: {
   avgDailyUsage: number;
@@ -30,51 +32,15 @@ export function calculateReorderPoint(params: {
   usageStdDev: number;
   serviceLevel?: number;
 }): number {
-  const Z = 1.65; // 95% service level
+  const Z = 1.65;
   const safetyStock = Z * params.usageStdDev * Math.sqrt(params.leadTimeDays);
   return params.avgDailyUsage * params.leadTimeDays + safetyStock;
 }
 
 /**
- * Calculate average daily usage and std deviation over the last N days.
- */
-export async function calculateAvgDailyUsage(
-  tenantId: string,
-  ingredientId: string,
-  days: number
-): Promise<{ avg: number; stdDev: number }> {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-
-  const ledgerEntries = await prisma.inventoryLedger.findMany({
-    where: {
-      tenantId,
-      ingredientId,
-      reason: "PRODUCTION",
-      createdAt: { gte: since },
-    },
-    orderBy: { createdAt: "asc" },
-  });
-
-  if (ledgerEntries.length === 0) return { avg: 0, stdDev: 0 };
-
-  // Group by day
-  const byDay = new Map<string, number>();
-  for (const entry of ledgerEntries) {
-    const day = entry.createdAt.toISOString().split("T")[0];
-    byDay.set(day, (byDay.get(day) ?? 0) + Math.abs(entry.qty));
-  }
-
-  const dailyValues = Array.from(byDay.values());
-  const avg = dailyValues.reduce((a, b) => a + b, 0) / days; // divide by total days, not active days
-  const variance =
-    dailyValues.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / Math.max(dailyValues.length, 1);
-
-  return { avg, stdDev: Math.sqrt(variance) };
-}
-
-/**
  * Check all ingredients and return those that need a PO generated.
+ * Demand is forecast via the best available statistical method
+ * (Naïve → SES → Holt → Holt-Winters) depending on history depth.
  */
 export async function checkReorderNeeds(tenantId: string): Promise<ReorderAlert[]> {
   const ingredients = await prisma.ingredient.findMany({
@@ -85,11 +51,16 @@ export async function checkReorderNeeds(tenantId: string): Promise<ReorderAlert[
   const alerts: ReorderAlert[] = [];
 
   for (const ingredient of ingredients) {
-    const dailyUsage = await calculateAvgDailyUsage(tenantId, ingredient.id, 30);
+    const { avgDailyUsage, sigma } = await forecastDailyDemand(
+      tenantId,
+      ingredient.id,
+      ingredient.leadTimeDays,
+    );
+
     const reorderPoint = calculateReorderPoint({
-      avgDailyUsage: dailyUsage.avg,
+      avgDailyUsage,
       leadTimeDays: ingredient.leadTimeDays,
-      usageStdDev: dailyUsage.stdDev,
+      usageStdDev: sigma,
     });
 
     if (ingredient.currentStock <= reorderPoint) {
@@ -98,8 +69,7 @@ export async function checkReorderNeeds(tenantId: string): Promise<ReorderAlert[
         currentStock: ingredient.currentStock,
         reorderPoint,
         reorderQty: ingredient.reorderQty,
-        daysRemaining:
-          dailyUsage.avg > 0 ? ingredient.currentStock / dailyUsage.avg : Infinity,
+        daysRemaining: avgDailyUsage > 0 ? ingredient.currentStock / avgDailyUsage : Infinity,
       });
     }
   }

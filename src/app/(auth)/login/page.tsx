@@ -23,7 +23,7 @@ function LoginContent() {
   };
 
   const handleGoogle = () => {
-    signIn("google", { callbackUrl: "/" });
+    signIn("google", { callbackUrl: "/pantry" });
   };
 
   const handleDevLogin = async () => {

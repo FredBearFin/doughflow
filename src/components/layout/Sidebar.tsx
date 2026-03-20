@@ -11,11 +11,13 @@ import {
   BarChart2,
   Settings,
   LogOut,
+  ChefHat,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 const nav = [
+  { href: "/bake", label: "Bake Plan", icon: ChefHat },
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/pantry", label: "Pantry", icon: Package },
   { href: "/recipes", label: "Recipes", icon: UtensilsCrossed },
