@@ -1,3 +1,19 @@
+/**
+ * Login page for DoughFlow.
+ *
+ * This is the entry point for unauthenticated users. It supports three
+ * authentication methods:
+ *   1. Google OAuth — one-click sign-in via the Google provider.
+ *   2. Magic link (Resend) — passwordless email sign-in. A sign-in link is
+ *      emailed to the user; clicking it completes authentication.
+ *   3. Dev credentials — only available in development mode, allowing instant
+ *      sign-in as a seed user without needing a working email service.
+ *
+ * The page is split into two components so that `useSearchParams` (which
+ * requires Suspense in Next.js 13+) can be used inside `LoginContent` while
+ * keeping the exported page component safe for static rendering.
+ */
+
 "use client";
 
 import { Suspense, useState } from "react";
@@ -7,13 +23,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+/**
+ * LoginContent renders the actual login UI. It is wrapped in a <Suspense>
+ * boundary in the exported default because `useSearchParams` suspends.
+ */
 function LoginContent() {
+  // Check whether we arrived here after sending a magic link (?verify=1)
   const searchParams = useSearchParams();
   const verify = searchParams.get("verify") === "1";
+
+  // Local state for the email input and async loading/sent flags
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  /** True after a magic link has been dispatched, shows the confirmation screen */
   const [sent, setSent] = useState(false);
 
+  /**
+   * Handles the email magic-link form submission.
+   * Calls NextAuth's signIn with the "resend" provider, which triggers Resend
+   * to send a sign-in email. We pass redirect:false so that we control the UX
+   * ourselves (show the "link sent" state) instead of letting NextAuth redirect.
+   */
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -22,10 +52,18 @@ function LoginContent() {
     setSent(true);
   };
 
+  /**
+   * Initiates Google OAuth sign-in.
+   * After successful authentication the user is redirected to /overview.
+   */
   const handleGoogle = () => {
     signIn("google", { callbackUrl: "/overview" });
   };
 
+  /**
+   * Development-only shortcut: signs in as the seed bakery owner without
+   * needing a real email flow. Only rendered when NODE_ENV === "development".
+   */
   const handleDevLogin = async () => {
     setLoading(true);
     await signIn("dev", { email: "owner@flourandsalt.com", callbackUrl: "/" });
@@ -45,7 +83,15 @@ function LoginContent() {
         </div>
 
         <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-8">
+          {/*
+           * Three possible UI states:
+           *   verify — user clicked a magic link and arrived via ?verify=1
+           *   sent    — user just submitted the email form in this session
+           *   default — the actual sign-in form
+           */}
           {verify ? (
+            /* Arrived via the ?verify=1 redirect that NextAuth appends to the
+               verifyRequest page. Show a "check your email" prompt. */
             <div className="text-center">
               <div className="text-4xl mb-3">✉️</div>
               <h2 className="text-xl font-semibold text-stone-900 mb-2">Check your email</h2>
@@ -54,6 +100,7 @@ function LoginContent() {
               </p>
             </div>
           ) : sent ? (
+            /* User just sent a magic link from within this component instance */
             <div className="text-center">
               <div className="text-4xl mb-3">✉️</div>
               <h2 className="text-xl font-semibold text-stone-900 mb-2">Magic link sent!</h2>
@@ -63,6 +110,7 @@ function LoginContent() {
             <>
               <h2 className="text-xl font-semibold text-stone-900 mb-6">Sign in</h2>
 
+              {/* Google OAuth button */}
               <Button
                 onClick={handleGoogle}
                 variant="outline"
@@ -89,6 +137,7 @@ function LoginContent() {
                 Continue with Google
               </Button>
 
+              {/* Visual divider between OAuth and email options */}
               <div className="relative mb-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-stone-200" />
@@ -98,6 +147,11 @@ function LoginContent() {
                 </div>
               </div>
 
+              {/*
+               * Dev-only shortcut — only rendered in development.
+               * This bypasses email entirely and signs in as the seed owner account
+               * so developers can test the app without setting up Resend or Google.
+               */}
               {process.env.NODE_ENV === "development" && (
                 <Button
                   onClick={handleDevLogin}
@@ -109,6 +163,7 @@ function LoginContent() {
                 </Button>
               )}
 
+              {/* Magic-link email form */}
               <form onSubmit={handleEmail} className="space-y-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email address</Label>
@@ -121,6 +176,7 @@ function LoginContent() {
                     required
                   />
                 </div>
+                {/* Disable submit if already loading or email is empty */}
                 <Button type="submit" className="w-full" disabled={loading || !email}>
                   {loading ? "Sending…" : "Send magic link"}
                 </Button>
@@ -137,6 +193,12 @@ function LoginContent() {
   );
 }
 
+/**
+ * Default export — the Next.js page component.
+ * Wraps LoginContent in Suspense because useSearchParams() requires it
+ * (Next.js 13 App Router rule: any component reading search params must
+ * be inside a Suspense boundary during static rendering).
+ */
 export default function LoginPage() {
   return (
     <Suspense>

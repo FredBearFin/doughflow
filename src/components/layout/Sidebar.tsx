@@ -1,13 +1,15 @@
 "use client";
 
+// Sidebar navigation — fixed left panel shown on all dashboard pages.
+// Uses usePathname for active state detection (client-side hook).
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
   UtensilsCrossed,
-  ShoppingCart,
-  Trash2,
+  ClipboardList,
   BarChart2,
   Settings,
   LogOut,
@@ -15,14 +17,14 @@ import {
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
+// Core navigation items — lean set matching the app's focused scope
 const nav = [
-  { href: "/overview", label: "Overview", icon: LayoutDashboard },
-  { href: "/pantry", label: "Pantry", icon: Package },
-  { href: "/recipes", label: "Recipes", icon: UtensilsCrossed },
-  { href: "/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/waste", label: "Waste", icon: Trash2 },
-  { href: "/analytics", label: "Analytics", icon: BarChart2 },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/overview",  label: "Overview",    icon: LayoutDashboard },
+  { href: "/pantry",    label: "Pantry",       icon: Package },
+  { href: "/recipes",   label: "Products",     icon: UtensilsCrossed },
+  { href: "/waste",     label: "End of Day",   icon: ClipboardList },
+  { href: "/analytics", label: "Analytics",    icon: BarChart2 },
+  { href: "/settings",  label: "Settings",     icon: Settings },
 ];
 
 export function Sidebar() {
@@ -38,10 +40,11 @@ export function Sidebar() {
         <span className="font-semibold text-stone-900 text-lg">DoughFlow</span>
       </div>
 
-      {/* Nav */}
+      {/* Nav links */}
       <nav className="flex-1 overflow-y-auto py-4 px-3">
         {nav.map(({ href, label, icon: Icon }) => {
-          const active = href === "/" ? pathname === href : pathname.startsWith(href);
+          // Prefix matching so child routes keep the parent item highlighted
+          const active = pathname.startsWith(href);
           return (
             <Link
               key={href}

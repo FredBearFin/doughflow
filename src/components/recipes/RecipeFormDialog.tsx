@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+// RecipeFormDialog — create or edit a product (baked item) and its ingredient BOM.
+// No selling price or yield % — just name, batch size, and ingredient quantities.
+
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,15 +20,13 @@ import { trpc } from "@/lib/trpc";
 import { Plus, Trash2 } from "lucide-react";
 
 const schema = z.object({
-  name: z.string().min(1, "Name required"),
+  name:        z.string().min(1, "Name required"),
   description: z.string().optional(),
-  batchSize: z.number().int().min(1),
-  yieldPct: z.number().min(0.01).max(1),
-  sellingPrice: z.number().min(0),
+  batchSize:   z.number().int().min(1, "Batch size must be at least 1"),
   ingredients: z.array(
     z.object({
       ingredientId: z.string().min(1, "Select ingredient"),
-      quantity: z.number().min(0.01, "Enter quantity"),
+      quantity:     z.number().min(0.01, "Enter quantity"),
     })
   ),
 });
@@ -34,11 +34,11 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 interface RecipeFormDialogProps {
-  tenantId: string;
-  recipe?: Recipe;
-  open: boolean;
+  tenantId:     string;
+  recipe?:      Recipe;
+  open:         boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
+  onSuccess?:   () => void;
 }
 
 export function RecipeFormDialog({
@@ -48,9 +48,10 @@ export function RecipeFormDialog({
   onOpenChange,
   onSuccess,
 }: RecipeFormDialogProps) {
-  const utils = trpc.useUtils();
+  const utils  = trpc.useUtils();
   const isEdit = !!recipe;
 
+  // Ingredients list for BOM selector dropdowns
   const { data: ingredients } = trpc.ingredient.getAll.useQuery({ tenantId });
 
   const create = trpc.recipe.create.useMutation({
@@ -71,22 +72,15 @@ export function RecipeFormDialog({
     },
   });
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({
+  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      batchSize: 1,
-      yieldPct: 0.95,
-      sellingPrice: 0,
+      batchSize:   1,
       ingredients: [{ ingredientId: "", quantity: 0 }],
     },
   });
 
+  // Dynamic BOM ingredient line management
   const { fields, append, remove } = useFieldArray({ control, name: "ingredients" });
 
   const onSubmit = (data: FormValues) => {
@@ -103,59 +97,42 @@ export function RecipeFormDialog({
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v && !isEdit) reset(); }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Recipe" : "New Recipe"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Product" : "New Product"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Product name */}
           <div className="space-y-1.5">
             <Label htmlFor="name">Name *</Label>
             <Input id="name" placeholder="Sourdough Loaf" {...register("name")} />
             {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
           </div>
 
+          {/* Optional description */}
           <div className="space-y-1.5">
             <Label htmlFor="description">Description</Label>
             <Input id="description" placeholder="Optional description" {...register("description")} />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="batchSize">Batch Size</Label>
-              <Input
-                id="batchSize"
-                type="number"
-                min="1"
-                {...register("batchSize", { valueAsNumber: true })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="yieldPct">Yield %</Label>
-              <Input
-                id="yieldPct"
-                type="number"
-                step="0.01"
-                min="0.01"
-                max="1"
-                {...register("yieldPct", { valueAsNumber: true })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="sellingPrice">Price ($)</Label>
-              <Input
-                id="sellingPrice"
-                type="number"
-                step="0.01"
-                {...register("sellingPrice", { valueAsNumber: true })}
-              />
-            </div>
+          {/* Batch size — how many units one batch produces */}
+          <div className="space-y-1.5">
+            <Label htmlFor="batchSize">Batch Size (units per batch)</Label>
+            <Input
+              id="batchSize"
+              type="number"
+              min="1"
+              placeholder="12"
+              {...register("batchSize", { valueAsNumber: true })}
+            />
+            {errors.batchSize && <p className="text-xs text-red-600">{errors.batchSize.message}</p>}
           </div>
 
-          {/* Ingredients */}
+          {/* BOM ingredient lines */}
           <div className="space-y-2">
-            <Label>Ingredients</Label>
+            <Label>Ingredients (per batch)</Label>
             {fields.map((field, idx) => (
               <div key={field.id} className="flex gap-2 items-end">
-                <div className="flex-1 space-y-1">
+                <div className="flex-1">
                   <select
                     className="flex h-11 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                     {...register(`ingredients.${idx}.ingredientId`)}
@@ -168,7 +145,7 @@ export function RecipeFormDialog({
                     ))}
                   </select>
                 </div>
-                <div className="w-28 space-y-1">
+                <div className="w-28">
                   <Input
                     type="number"
                     step="0.01"
@@ -199,11 +176,9 @@ export function RecipeFormDialog({
           </div>
 
           <div className="flex gap-2 justify-end pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving…" : isEdit ? "Save Changes" : "Create Recipe"}
+              {isPending ? "Saving…" : isEdit ? "Save Changes" : "Create Product"}
             </Button>
           </div>
         </form>

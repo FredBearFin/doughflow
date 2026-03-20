@@ -1,5 +1,8 @@
 "use client";
 
+// Ingredient detail page — /pantry/[id]
+// Shows current stock, low-stock threshold, and action buttons to edit or adjust stock.
+
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -11,16 +14,8 @@ import { AdjustStockDialog } from "@/components/pantry/AdjustStockDialog";
 import { IngredientFormDialog } from "@/components/pantry/IngredientFormDialog";
 import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
-import { formatUnit, formatDate, formatCurrency } from "@/lib/utils";
+import { formatUnit, formatDate } from "@/lib/utils";
 import { ArrowLeft, Pencil, SlidersHorizontal } from "lucide-react";
-
-const REASON_LABEL: Record<string, string> = {
-  PURCHASE: "Purchase",
-  PRODUCTION: "Production",
-  WASTE: "Waste",
-  ADJUSTMENT: "Adjustment",
-  OPENING: "Opening Stock",
-};
 
 export default function IngredientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -67,7 +62,8 @@ export default function IngredientDetailPage() {
           Back to Pantry
         </Link>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* KPI cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardContent className="p-5">
               <p className="text-sm text-stone-500 mb-1">Current Stock</p>
@@ -82,25 +78,13 @@ export default function IngredientDetailPage() {
 
           <Card>
             <CardContent className="p-5">
-              <p className="text-sm text-stone-500 mb-1">Reorder Point</p>
+              <p className="text-sm text-stone-500 mb-1">Low Stock Alert At</p>
               <p className="tabular-nums text-3xl font-bold text-stone-900">
-                {formatUnit(ingredient.reorderPoint, ingredient.unit)}
+                {ingredient.reorderPoint > 0
+                  ? formatUnit(ingredient.reorderPoint, ingredient.unit)
+                  : "Not set"}
               </p>
-              <p className="text-xs text-stone-400 mt-1">
-                Lead time: {ingredient.leadTimeDays}d
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-5">
-              <p className="text-sm text-stone-500 mb-1">Cost per Unit</p>
-              <p className="tabular-nums text-3xl font-bold text-stone-900">
-                ${ingredient.costPerUnit.toFixed(4)}
-              </p>
-              <p className="text-xs text-stone-400 mt-1">
-                per {ingredient.unit.toLowerCase()}
-              </p>
+              <p className="text-xs text-stone-400 mt-1">per {ingredient.unit.toLowerCase()}</p>
             </CardContent>
           </Card>
         </div>
@@ -113,12 +97,8 @@ export default function IngredientDetailPage() {
           <CardContent>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
               {[
-                ["SKU", ingredient.sku ?? "—"],
-                ["Unit", ingredient.unit],
-                ["Reorder Qty", formatUnit(ingredient.reorderQty, ingredient.unit)],
-                ["Supplier", ingredient.supplier?.name ?? "—"],
-                ["Shelf Life", ingredient.shelfLifeDays ? `${ingredient.shelfLifeDays} days` : "—"],
-                ["Stock Value", formatCurrency(ingredient.currentStock * ingredient.costPerUnit)],
+                ["Unit",          ingredient.unit],
+                ["Added",         formatDate(ingredient.createdAt)],
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt className="text-stone-400">{label}</dt>
@@ -126,44 +106,6 @@ export default function IngredientDetailPage() {
                 </div>
               ))}
             </dl>
-          </CardContent>
-        </Card>
-
-        {/* Ledger history */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Movement History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {ingredient.ledgerEntries.length === 0 ? (
-              <p className="text-sm text-stone-400 py-4 text-center">No movements recorded</p>
-            ) : (
-              <div className="space-y-0 divide-y divide-stone-100">
-                {ingredient.ledgerEntries.map((entry) => (
-                  <div key={entry.id} className="flex items-center justify-between py-3">
-                    <div>
-                      <p className="text-sm font-medium text-stone-900">
-                        {REASON_LABEL[entry.reason] ?? entry.reason}
-                      </p>
-                      {entry.note && (
-                        <p className="text-xs text-stone-400">{entry.note}</p>
-                      )}
-                      <p className="text-xs text-stone-400">
-                        {formatDate(entry.createdAt)}
-                      </p>
-                    </div>
-                    <span
-                      className={`tabular-nums font-semibold ${
-                        entry.qty >= 0 ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {entry.qty >= 0 ? "+" : ""}
-                      {formatUnit(entry.qty, ingredient.unit)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
