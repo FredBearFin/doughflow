@@ -41,10 +41,9 @@ import {
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 
-const ALL_UNITS = [
-  "LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH",
-  "GRAM", "KILOGRAM", "MILLILITER", "LITER",
-] as const;
+const US_UNITS  = ["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH"] as const;
+const MET_UNITS = ["GRAM", "KILOGRAM", "MILLILITER", "LITER"] as const;
+const ALL_UNITS = [...US_UNITS, ...MET_UNITS] as const;
 type Unit = typeof ALL_UNITS[number];
 
 const schema = z.object({
@@ -57,6 +56,20 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+const UNIT_LABELS: Record<Unit, string> = {
+  LB:         "Pound (lb)",
+  OZ:         "Ounce (oz)",
+  FL_OZ:      "Fluid Ounce (fl oz)",
+  CUP:        "Cup",
+  TBSP:       "Tablespoon (tbsp)",
+  TSP:        "Teaspoon (tsp)",
+  EACH:       "Each",
+  GRAM:       "Gram (g)",
+  KILOGRAM:   "Kilogram (kg)",
+  MILLILITER: "Milliliter (ml)",
+  LITER:      "Liter (L)",
+};
 
 /** Short abbreviation for the cost field label */
 const UNIT_ABBR: Record<Unit, string> = {
@@ -174,20 +187,15 @@ export function IngredientFormDialog({
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>US Bakery</SelectLabel>
-                  <SelectItem value="LB">Pound (lb)</SelectItem>
-                  <SelectItem value="OZ">Ounce (oz)</SelectItem>
-                  <SelectItem value="FL_OZ">Fluid Ounce (fl oz)</SelectItem>
-                  <SelectItem value="CUP">Cup</SelectItem>
-                  <SelectItem value="TBSP">Tablespoon (tbsp)</SelectItem>
-                  <SelectItem value="TSP">Teaspoon (tsp)</SelectItem>
-                  <SelectItem value="EACH">Each</SelectItem>
+                  {US_UNITS.map((u) => (
+                    <SelectItem key={u} value={u}>{UNIT_LABELS[u]}</SelectItem>
+                  ))}
                 </SelectGroup>
                 <SelectGroup>
                   <SelectLabel>Metric</SelectLabel>
-                  <SelectItem value="GRAM">Gram (g)</SelectItem>
-                  <SelectItem value="KILOGRAM">Kilogram (kg)</SelectItem>
-                  <SelectItem value="MILLILITER">Milliliter (ml)</SelectItem>
-                  <SelectItem value="LITER">Liter (L)</SelectItem>
+                  {MET_UNITS.map((u) => (
+                    <SelectItem key={u} value={u}>{UNIT_LABELS[u]}</SelectItem>
+                  ))}
                 </SelectGroup>
               </SelectContent>
             </Select>

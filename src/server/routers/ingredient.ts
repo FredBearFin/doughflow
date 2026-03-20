@@ -5,6 +5,8 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 
+const UNIT_ENUM = ["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH", "GRAM", "KILOGRAM", "MILLILITER", "LITER"] as const;
+
 export const ingredientRouter = router({
   // Return all active ingredients for a tenant, sorted alphabetically
   getAll: protectedProcedure
@@ -33,7 +35,7 @@ export const ingredientRouter = router({
       z.object({
         tenantId:       z.string(),
         name:           z.string().min(1),
-        unit:           z.enum(["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH", "GRAM", "KILOGRAM", "MILLILITER", "LITER"]),
+        unit:           z.enum(UNIT_ENUM),
         currentStock:   z.number().min(0).default(0),
         reorderPoint:   z.number().min(0).default(0),
         costPerUnit:    z.number().min(0).optional(),
@@ -51,7 +53,7 @@ export const ingredientRouter = router({
         id:             z.string(),
         tenantId:       z.string(),
         name:           z.string().min(1).optional(),
-        unit:           z.enum(["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH", "GRAM", "KILOGRAM", "MILLILITER", "LITER"]).optional(),
+        unit:           z.enum(UNIT_ENUM).optional(),
         reorderPoint:   z.number().min(0).optional(),
         costPerUnit:    z.number().min(0).nullable().optional(),
         wholeUnitsOnly: z.boolean().optional(),
