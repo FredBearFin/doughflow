@@ -214,7 +214,7 @@ export function IngredientFormDialog({
                 placeholder="e.g. 0.89"
                 className="pl-7"
                 {...register("costPerUnit", {
-                  setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
+                  setValueAs: (v) => (v === "" || v === null ? undefined : Number(v)),
                 })}
               />
             </div>
