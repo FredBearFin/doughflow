@@ -30,21 +30,25 @@ export function getStockStatus(ingredient: Ingredient): StockStatus {
   return "ok";
 }
 
-// Format a stock quantity with smart unit scaling
-// e.g. 1500 GRAM → "1.5 kg", 250 MILLILITER → "250 mL", 12 EACH → "12 ea"
+// Format a stock quantity with its US bakery unit abbreviation.
+// Units: LB | OZ | FL_OZ | CUP | TBSP | TSP | EACH
 export function formatUnit(qty: number, unit: string): string {
-  const rounded = Math.round(qty * 10) / 10;
+  const rounded = Math.round(qty * 100) / 100; // 2 decimal places for oz/lb precision
   switch (unit) {
-    case "GRAM":
-      return qty >= 1000 ? `${Math.round(qty / 100) / 10} kg` : `${rounded} g`;
-    case "KILOGRAM":
-      return `${rounded} kg`;
-    case "MILLILITER":
-      return qty >= 1000 ? `${Math.round(qty / 100) / 10} L` : `${rounded} mL`;
-    case "LITER":
-      return `${rounded} L`;
+    case "LB":
+      return `${rounded} lb`;
+    case "OZ":
+      return `${rounded} oz`;
+    case "FL_OZ":
+      return `${rounded} fl oz`;
+    case "CUP":
+      return rounded === 1 ? "1 cup" : `${rounded} cups`;
+    case "TBSP":
+      return `${rounded} tbsp`;
+    case "TSP":
+      return `${rounded} tsp`;
     case "EACH":
-      return `${rounded} ea`;
+      return `${Math.round(qty)} ea`;
     default:
       return `${rounded} ${unit.toLowerCase()}`;
   }

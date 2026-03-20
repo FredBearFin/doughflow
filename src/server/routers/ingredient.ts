@@ -33,7 +33,7 @@ export const ingredientRouter = router({
       z.object({
         tenantId:     z.string(),
         name:         z.string().min(1),
-        unit:         z.enum(["GRAM", "KILOGRAM", "MILLILITER", "LITER", "EACH"]),
+        unit:         z.enum(["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH"]),
         currentStock: z.number().min(0).default(0),
         reorderPoint: z.number().min(0).default(0), // Low-stock alert threshold
         costPerUnit:  z.number().min(0).optional(),  // Optional: cost per unit in local currency
@@ -50,7 +50,7 @@ export const ingredientRouter = router({
         id:           z.string(),
         tenantId:     z.string(),
         name:         z.string().min(1).optional(),
-        unit:         z.enum(["GRAM", "KILOGRAM", "MILLILITER", "LITER", "EACH"]).optional(),
+        unit:         z.enum(["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH"]).optional(),
         reorderPoint: z.number().min(0).optional(),
         costPerUnit:  z.number().min(0).nullable().optional(), // null clears the cost
         active:       z.boolean().optional(),

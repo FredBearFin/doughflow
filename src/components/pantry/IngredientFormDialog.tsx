@@ -3,7 +3,7 @@
  *
  * Fields:
  *   - Name (required)
- *   - Unit (required enum: GRAM | KILOGRAM | MILLILITER | LITER | EACH)
+ *   - Unit (required) — US bakery units: lb, oz, fl oz, cup, tbsp, tsp, each
  *   - Current Stock (required, min 0)
  *   - Low Stock Alert At (reorderPoint, min 0)
  *   - Cost per unit (optional — enables dollar-value waste analytics)
@@ -13,8 +13,6 @@
  * to unit counts. Leave it blank to keep the app unit-only.
  *
  * In edit mode the dialog is pre-populated with the ingredient's current values.
- * After success, both the list and detail queries are invalidated so the UI
- * reflects the change immediately.
  */
 
 "use client";
@@ -41,19 +39,41 @@ import {
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 
-/**
- * Zod schema for the ingredient form.
- * costPerUnit is optional — an empty string input should be treated as null/undefined.
- */
+/** US bakery unit options */
+const UNITS = ["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH"] as const;
+type Unit = typeof UNITS[number];
+
 const schema = z.object({
   name:         z.string().min(1, "Name required"),
-  unit:         z.enum(["GRAM", "KILOGRAM", "MILLILITER", "LITER", "EACH"]),
+  unit:         z.enum(UNITS),
   currentStock: z.number().min(0),
   reorderPoint: z.number().min(0),
-  costPerUnit:  z.number().min(0).nullable().optional(), // null = not set
+  costPerUnit:  z.number().min(0).nullable().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
+
+/** Display labels for each unit in the selector */
+const UNIT_LABELS: Record<Unit, string> = {
+  LB:     "Pound (lb)",
+  OZ:     "Ounce (oz)",
+  FL_OZ:  "Fluid Ounce (fl oz)",
+  CUP:    "Cup",
+  TBSP:   "Tablespoon (tbsp)",
+  TSP:    "Teaspoon (tsp)",
+  EACH:   "Each",
+};
+
+/** Short abbreviation for the cost field label */
+const UNIT_ABBR: Record<Unit, string> = {
+  LB:     "lb",
+  OZ:     "oz",
+  FL_OZ:  "fl oz",
+  CUP:    "cup",
+  TBSP:   "tbsp",
+  TSP:    "tsp",
+  EACH:   "each",
+};
 
 interface IngredientFormDialogProps {
   tenantId:     string;
@@ -96,35 +116,22 @@ export function IngredientFormDialog({
     defaultValues: ingredient
       ? {
           name:         ingredient.name,
-          unit:         ingredient.unit as FormValues["unit"],
+          unit:         ingredient.unit as Unit,
           currentStock: ingredient.currentStock,
           reorderPoint: ingredient.reorderPoint,
           costPerUnit:  ingredient.costPerUnit ?? undefined,
         }
       : {
-          unit:         "GRAM",
+          unit:         "LB", // Most common bakery bulk unit
           currentStock: 0,
           reorderPoint: 0,
           costPerUnit:  undefined,
         },
   });
 
-  const selectedUnit = watch("unit");
-
-  /**
-   * Unit label shown in the cost field placeholder and label.
-   * e.g. "GRAM" → "g", "EACH" → "each", "MILLILITER" → "mL"
-   */
-  const unitLabel: Record<string, string> = {
-    GRAM:       "g",
-    KILOGRAM:   "kg",
-    MILLILITER: "mL",
-    LITER:      "L",
-    EACH:       "each",
-  };
+  const selectedUnit = (watch("unit") ?? "LB") as Unit;
 
   const onSubmit = (data: FormValues) => {
-    // Convert null/undefined costPerUnit to undefined for the API
     const costPerUnit = data.costPerUnit ?? undefined;
     if (isEdit) {
       update.mutate({ id: ingredient.id, tenantId, ...data, costPerUnit });
@@ -150,34 +157,35 @@ export function IngredientFormDialog({
             {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
           </div>
 
-          {/* Unit selector */}
+          {/* Unit selector — US bakery units */}
           <div className="space-y-1.5">
             <Label>Unit *</Label>
             <Select
               defaultValue={watch("unit")}
-              onValueChange={(v) => setValue("unit", v as FormValues["unit"])}
+              onValueChange={(v) => setValue("unit", v as Unit)}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="GRAM">Gram</SelectItem>
-                <SelectItem value="KILOGRAM">Kilogram</SelectItem>
-                <SelectItem value="MILLILITER">Milliliter</SelectItem>
-                <SelectItem value="LITER">Liter</SelectItem>
-                <SelectItem value="EACH">Each</SelectItem>
+                {UNITS.map((u) => (
+                  <SelectItem key={u} value={u}>
+                    {UNIT_LABELS[u]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {/* Current stock — opening balance in create mode */}
+            {/* Current stock */}
             <div className="space-y-1.5">
               <Label htmlFor="currentStock">Current Stock</Label>
               <Input
                 id="currentStock"
                 type="number"
                 step="0.01"
+                min="0"
                 placeholder="0"
                 {...register("currentStock", { valueAsNumber: true })}
               />
@@ -190,6 +198,7 @@ export function IngredientFormDialog({
                 id="reorderPoint"
                 type="number"
                 step="0.01"
+                min="0"
                 placeholder="0"
                 {...register("reorderPoint", { valueAsNumber: true })}
               />
@@ -199,7 +208,7 @@ export function IngredientFormDialog({
           {/* Optional cost per unit — enables dollar waste analytics */}
           <div className="space-y-1.5">
             <Label htmlFor="costPerUnit">
-              Cost per {unitLabel[selectedUnit] ?? selectedUnit.toLowerCase()}{" "}
+              Cost per {UNIT_ABBR[selectedUnit]}{" "}
               <span className="text-stone-400 font-normal">(optional)</span>
             </Label>
             <div className="relative">
@@ -209,7 +218,7 @@ export function IngredientFormDialog({
                 type="number"
                 step="0.0001"
                 min="0"
-                placeholder="e.g. 0.009"
+                placeholder="e.g. 0.89"
                 className="pl-7"
                 {...register("costPerUnit", {
                   setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
@@ -217,7 +226,7 @@ export function IngredientFormDialog({
               />
             </div>
             <p className="text-xs text-stone-400">
-              Set this to see the dollar value of waste in analytics
+              Set this to see dollar cost of waste in analytics
             </p>
             {errors.costPerUnit && (
               <p className="text-xs text-red-600">{errors.costPerUnit.message}</p>

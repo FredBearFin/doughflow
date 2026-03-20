@@ -44,7 +44,7 @@ model Ingredient {
   id            String   @id @default(cuid())
   tenantId      String
   name          String
-  unit          String   @default("GRAM")  // GRAM | KILOGRAM | MILLILITER | LITER | EACH
+  unit          String   @default("LB")    // US bakery units: LB | OZ | FL_OZ | CUP | TBSP | TSP | EACH
   currentStock  Float    @default(0)
   reorderPoint  Float    @default(0)       // Low-stock alert threshold
   costPerUnit   Float?                     // Optional: cost per 1 unit in local currency (e.g. $0.009 per gram)
