@@ -33,7 +33,7 @@ export const ingredientRouter = router({
       z.object({
         tenantId:       z.string(),
         name:           z.string().min(1),
-        unit:           z.enum(["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH"]),
+        unit:           z.enum(["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH", "GRAM", "KILOGRAM", "MILLILITER", "LITER"]),
         currentStock:   z.number().min(0).default(0),
         reorderPoint:   z.number().min(0).default(0),
         costPerUnit:    z.number().min(0).optional(),
@@ -48,10 +48,10 @@ export const ingredientRouter = router({
   update: protectedProcedure
     .input(
       z.object({
-        id:           z.string(),
+        id:             z.string(),
         tenantId:       z.string(),
         name:           z.string().min(1).optional(),
-        unit:           z.enum(["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH"]).optional(),
+        unit:           z.enum(["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH", "GRAM", "KILOGRAM", "MILLILITER", "LITER"]).optional(),
         reorderPoint:   z.number().min(0).optional(),
         costPerUnit:    z.number().min(0).nullable().optional(),
         wholeUnitsOnly: z.boolean().optional(),

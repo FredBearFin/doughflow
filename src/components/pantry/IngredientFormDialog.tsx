@@ -3,7 +3,7 @@
  *
  * Fields:
  *   - Name (required)
- *   - Unit (required) — US bakery units: lb, oz, fl oz, cup, tbsp, tsp, each
+ *   - Unit (required) — US bakery units + metric
  *   - Current Stock (required, min 0)
  *   - Low Stock Alert At (reorderPoint, min 0)
  *   - Cost per unit (optional — enables dollar-value waste analytics)
@@ -33,19 +33,23 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 
-/** US bakery unit options */
-const UNITS = ["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH"] as const;
-type Unit = typeof UNITS[number];
+const ALL_UNITS = [
+  "LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH",
+  "GRAM", "KILOGRAM", "MILLILITER", "LITER",
+] as const;
+type Unit = typeof ALL_UNITS[number];
 
 const schema = z.object({
   name:           z.string().min(1, "Name required"),
-  unit:           z.enum(UNITS),
+  unit:           z.enum(ALL_UNITS),
   currentStock:   z.number().min(0),
   reorderPoint:   z.number().min(0),
   costPerUnit:    z.number().min(0).nullable().optional(),
@@ -54,26 +58,19 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-/** Display labels for each unit in the selector */
-const UNIT_LABELS: Record<Unit, string> = {
-  LB:     "Pound (lb)",
-  OZ:     "Ounce (oz)",
-  FL_OZ:  "Fluid Ounce (fl oz)",
-  CUP:    "Cup",
-  TBSP:   "Tablespoon (tbsp)",
-  TSP:    "Teaspoon (tsp)",
-  EACH:   "Each",
-};
-
 /** Short abbreviation for the cost field label */
 const UNIT_ABBR: Record<Unit, string> = {
-  LB:     "lb",
-  OZ:     "oz",
-  FL_OZ:  "fl oz",
-  CUP:    "cup",
-  TBSP:   "tbsp",
-  TSP:    "tsp",
-  EACH:   "each",
+  LB:         "lb",
+  OZ:         "oz",
+  FL_OZ:      "fl oz",
+  CUP:        "cup",
+  TBSP:       "tbsp",
+  TSP:        "tsp",
+  EACH:       "each",
+  GRAM:       "g",
+  KILOGRAM:   "kg",
+  MILLILITER: "ml",
+  LITER:      "L",
 };
 
 interface IngredientFormDialogProps {
@@ -164,7 +161,7 @@ export function IngredientFormDialog({
             {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
           </div>
 
-          {/* Unit selector — US bakery units */}
+          {/* Unit selector — US bakery units + metric */}
           <div className="space-y-1.5">
             <Label>Unit *</Label>
             <Select
@@ -175,11 +172,23 @@ export function IngredientFormDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {UNITS.map((u) => (
-                  <SelectItem key={u} value={u}>
-                    {UNIT_LABELS[u]}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectLabel>US Bakery</SelectLabel>
+                  <SelectItem value="LB">Pound (lb)</SelectItem>
+                  <SelectItem value="OZ">Ounce (oz)</SelectItem>
+                  <SelectItem value="FL_OZ">Fluid Ounce (fl oz)</SelectItem>
+                  <SelectItem value="CUP">Cup</SelectItem>
+                  <SelectItem value="TBSP">Tablespoon (tbsp)</SelectItem>
+                  <SelectItem value="TSP">Teaspoon (tsp)</SelectItem>
+                  <SelectItem value="EACH">Each</SelectItem>
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Metric</SelectLabel>
+                  <SelectItem value="GRAM">Gram (g)</SelectItem>
+                  <SelectItem value="KILOGRAM">Kilogram (kg)</SelectItem>
+                  <SelectItem value="MILLILITER">Milliliter (ml)</SelectItem>
+                  <SelectItem value="LITER">Liter (L)</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
