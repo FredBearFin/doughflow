@@ -15,30 +15,21 @@
  * This is a Server Component (no "use client" directive). Static HTML is
  * sufficient here — there is no client interactivity, and rendering on the
  * server improves Time To First Byte and SEO.
- *
- * Navigation to /login is handled via Next.js <Link> components which prefetch
- * the target page for snappy transitions.
  */
 
 import Link from "next/link";
 
-/**
- * LandingPage is the default export for the root / route.
- * It renders the full public marketing page.
- */
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-stone-50">
       {/* Top navigation bar */}
       <nav className="flex items-center justify-between px-8 py-4 bg-white border-b border-stone-100">
-        {/* Logo lockup — amber "D" icon + brand name */}
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-amber-500 flex items-center justify-center">
             <span className="text-white font-bold text-sm">D</span>
           </div>
           <span className="font-semibold text-stone-900">DoughFlow</span>
         </div>
-        {/* Nav links + primary CTA */}
         <div className="flex items-center gap-3">
           <Link
             href="/pricing"
@@ -57,21 +48,18 @@ export default function LandingPage() {
 
       {/* Hero section */}
       <section className="max-w-4xl mx-auto px-8 pt-20 pb-16 text-center">
-        {/* Social proof / value chip above the headline */}
         <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-1.5 text-sm font-medium text-amber-800 mb-6">
           <span className="h-2 w-2 rounded-full bg-amber-500" />
-          3× ROI from day one
+          Stop baking blind
         </div>
-        {/* Main headline — two lines for visual rhythm */}
         <h1 className="text-5xl font-bold text-stone-900 leading-tight mb-6">
-          Stop guessing.<br />
-          <span className="text-amber-500">Start baking smarter.</span>
+          Know what to bake.<br />
+          <span className="text-amber-500">Before you fire the oven.</span>
         </h1>
         <p className="text-xl text-stone-500 max-w-2xl mx-auto mb-8">
-          DoughFlow is the lean inventory engine for bakeries. Track ingredients,
-          automate reorders, eliminate waste — and see your real COGS per recipe.
+          DoughFlow learns your bakery&apos;s demand patterns and tells you exactly what to bake each
+          morning — so you sell out without throwing away unsold product at close.
         </p>
-        {/* Dual CTA buttons: primary (start trial) and secondary (see pricing) */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/login"
@@ -86,47 +74,42 @@ export default function LandingPage() {
             See pricing
           </Link>
         </div>
-        {/* Trust disclaimer below the CTAs */}
-        <p className="text-sm text-stone-400 mt-4">No credit card · 14-day trial</p>
+        <p className="text-sm text-stone-400 mt-4">No credit card · 14-day free trial</p>
       </section>
 
-      {/* Feature grid — 3 columns on md+ screens */}
+      {/* Feature grid */}
       <section className="max-w-5xl mx-auto px-8 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/*
-           * Feature cards defined as a data array so adding new features
-           * only requires adding an entry here, not duplicating JSX.
-           */}
           {[
+            {
+              icon: "📈",
+              title: "Demand Forecast",
+              desc: "See what sold last Tuesday and the four before it. Get a suggested bake qty for today — automatically.",
+            },
+            {
+              icon: "✅",
+              title: "Ingredient Feasibility",
+              desc: "Before you bake 50 croissants, know if you have enough butter. DoughFlow checks your pantry against the forecast.",
+            },
             {
               icon: "📦",
               title: "Digital Pantry",
-              desc: "Real-time stock levels for every ingredient. Color-coded alerts before you run out.",
-            },
-            {
-              icon: "🧮",
-              title: "True COGS per Recipe",
-              desc: "See the actual cost breakdown per batch. Know your margin before you price.",
-            },
-            {
-              icon: "🔁",
-              title: "Auto Reorder",
-              desc: "Statistical reorder points based on your actual sales history. Draft POs created for you.",
+              desc: "Real-time stock levels for every ingredient. Color-coded low-stock alerts before you run out mid-bake.",
             },
             {
               icon: "📋",
-              title: "BOM Explosion",
-              desc: "Log a sale and every ingredient is automatically deducted — down to yield loss.",
+              title: "Bill of Materials",
+              desc: "Define what goes into each product. When you log a bake, ingredient stock updates automatically.",
             },
             {
               icon: "🗑️",
-              title: "Waste Tracking",
-              desc: "iPad-optimized waste logging. See your waste cost per ingredient per week.",
+              title: "Waste Logging",
+              desc: "End-of-day takes 60 seconds. Log what you baked and what you sold — the app tracks the rest.",
             },
             {
               icon: "📊",
-              title: "Analytics",
-              desc: "Revenue vs COGS trends. Top-selling products. Waste heat map. All in one view.",
+              title: "Waste Analytics",
+              desc: "See which products waste the most, which days are worst, and the dollar cost of what you throw away.",
             },
           ].map((f) => (
             <div
@@ -141,16 +124,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Bottom CTA banner — amber background for visual contrast */}
+      {/* Bottom CTA banner */}
       <section className="bg-amber-500 py-16">
         <div className="max-w-2xl mx-auto text-center px-8">
           <h2 className="text-3xl font-bold text-white mb-3">
-            A bakery doing $50k/month saves $500+
+            Less waste. Every single day.
           </h2>
           <p className="text-amber-100 mb-8">
-            That&apos;s 3× ROI on the $149/month flat fee — from eliminating waste alone.
+            Most bakeries throw away 10–15% of what they bake. DoughFlow pays for itself
+            in the first week of waste reduction.
           </p>
-          {/* White button on amber background for maximum contrast */}
           <Link
             href="/login"
             className="inline-flex items-center justify-center h-14 rounded-xl bg-white px-8 text-base font-semibold text-amber-600 hover:bg-amber-50 transition-colors"
