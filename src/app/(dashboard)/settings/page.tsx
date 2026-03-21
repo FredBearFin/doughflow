@@ -11,6 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
 import type { ImportResult } from "@/lib/csv";
 import { Download, Upload, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ExportButtons } from "@/components/ExportButtons";
 
 export default function SettingsPage() {
   const tenantId = useTenantId();
@@ -42,10 +43,6 @@ export default function SettingsPage() {
   const [importError, setImportError] = useState<string | null>(null);
   const ingredientFileRef = useRef<HTMLInputElement>(null);
   const salesFileRef = useRef<HTMLInputElement>(null);
-
-  function handleExport(type: string) {
-    window.location.href = `/api/export/${type}`;
-  }
 
   async function handleImport(type: string, file: File) {
     setImporting(true);
@@ -121,19 +118,7 @@ export default function SettingsPage() {
             {/* Export */}
             <div className="space-y-2">
               <p className="text-sm font-medium text-stone-700">Export</p>
-              <div className="flex flex-wrap gap-2">
-                {(["ingredients", "sales", "waste"] as const).map((type) => (
-                  <Button
-                    key={type}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExport(type)}
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </Button>
-                ))}
-              </div>
+              <ExportButtons />
             </div>
 
             <div className="border-t border-stone-100" />

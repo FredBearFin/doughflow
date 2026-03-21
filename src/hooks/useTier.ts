@@ -12,7 +12,8 @@ interface TierConfig {
   ingredientLimit: number | null;
   marketLimit: number | null;
   hasForecast: boolean;            // Bake Plan access
-  hasExports: boolean;             // CSV + PDF export
+  hasCsvExport: boolean;           // CSV download (ingredients / sales / waste)
+  hasPdfExport: boolean;           // PDF reports — Baker+ only
   hasWaste: boolean;               // waste logging
   hasCogs: boolean;                // COGS per recipe
 }
@@ -23,7 +24,8 @@ const TIER_CONFIG: Record<Tier, TierConfig> = {
     ingredientLimit: 3,
     marketLimit: 1,
     hasForecast: false,
-    hasExports: false,
+    hasCsvExport: false,
+    hasPdfExport: false,
     hasWaste: false,
     hasCogs: false,
   },
@@ -32,7 +34,8 @@ const TIER_CONFIG: Record<Tier, TierConfig> = {
     ingredientLimit: 25,
     marketLimit: 1,
     hasForecast: true,
-    hasExports: false,
+    hasCsvExport: true,           // CSV unlocks at Cottage
+    hasPdfExport: false,
     hasWaste: true,
     hasCogs: true,
   },
@@ -41,7 +44,8 @@ const TIER_CONFIG: Record<Tier, TierConfig> = {
     ingredientLimit: null,
     marketLimit: 3,
     hasForecast: true,
-    hasExports: true,
+    hasCsvExport: true,
+    hasPdfExport: true,           // PDF unlocks at Baker
     hasWaste: true,
     hasCogs: true,
   },
@@ -50,7 +54,8 @@ const TIER_CONFIG: Record<Tier, TierConfig> = {
     ingredientLimit: null,
     marketLimit: null,
     hasForecast: true,
-    hasExports: true,
+    hasCsvExport: true,
+    hasPdfExport: true,
     hasWaste: true,
     hasCogs: true,
   },
