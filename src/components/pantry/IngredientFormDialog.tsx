@@ -130,11 +130,14 @@ export function IngredientFormDialog({
   });
 
   const selectedUnit = (watch("unit") ?? "LB") as Unit;
+  const isEach = selectedUnit === "EACH";
 
   const onSubmit = (data: FormValues) => {
     const costPerUnit = data.costPerUnit ?? undefined;
     if (isEdit) {
-      update.mutate({ id: ingredient.id, tenantId, ...data, costPerUnit });
+      // currentStock is intentionally excluded from edit — use Adjust Stock instead
+      const { currentStock: _ignored, ...editData } = data;
+      update.mutate({ id: ingredient.id, tenantId, ...editData, costPerUnit });
     } else {
       create.mutate({ tenantId, ...data, costPerUnit });
     }
@@ -178,18 +181,23 @@ export function IngredientFormDialog({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {/* Current stock */}
-            <div className="space-y-1.5">
-              <Label htmlFor="currentStock">Current Stock</Label>
-              <Input
-                id="currentStock"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0"
-                {...register("currentStock", { valueAsNumber: true })}
-              />
-            </div>
+            {/* Current stock — only shown when creating; use Adjust Stock to change it after */}
+            {!isEdit && (
+              <div className="space-y-1.5">
+                <Label htmlFor="currentStock">Current Stock</Label>
+                <Input
+                  id="currentStock"
+                  type="number"
+                  step={isEach ? "1" : "0.01"}
+                  min="0"
+                  placeholder="0"
+                  {...register("currentStock", { valueAsNumber: true })}
+                />
+                {isEach && (
+                  <p className="text-xs text-stone-400">Whole numbers only (e.g. 12 eggs)</p>
+                )}
+              </div>
+            )}
 
             {/* Low-stock alert threshold */}
             <div className="space-y-1.5">
@@ -197,13 +205,20 @@ export function IngredientFormDialog({
               <Input
                 id="reorderPoint"
                 type="number"
-                step="0.01"
+                step={isEach ? "1" : "0.01"}
                 min="0"
                 placeholder="0"
                 {...register("reorderPoint", { valueAsNumber: true })}
               />
             </div>
           </div>
+
+          {/* Nudge to use Adjust Stock when editing */}
+          {isEdit && (
+            <p className="text-xs text-stone-400 -mt-1">
+              To change current stock, use the <strong>Adjust Stock</strong> button on the ingredient page.
+            </p>
+          )}
 
           {/* Optional cost per unit — enables dollar waste analytics */}
           <div className="space-y-1.5">
