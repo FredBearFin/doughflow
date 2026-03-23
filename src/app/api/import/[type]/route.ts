@@ -153,19 +153,13 @@ async function importSales(
       continue;
     }
 
-    const qty = parseInt(row.qty);
-    if (isNaN(qty) || qty < 1) {
-      result.errors.push({ row: rowNum, message: `invalid qty "${row.qty}" — must be integer ≥ 1` });
+    const qtySold = parseInt(row.qty ?? row.qtySold);
+    if (isNaN(qtySold) || qtySold < 0) {
+      result.errors.push({ row: rowNum, message: `invalid qty "${row.qty ?? row.qtySold}" — must be integer ≥ 0` });
       result.skipped++;
       continue;
     }
-
-    const revenue = parseFloat(row.revenue);
-    if (isNaN(revenue) || revenue < 0) {
-      result.errors.push({ row: rowNum, message: `invalid revenue "${row.revenue}"` });
-      result.skipped++;
-      continue;
-    }
+    const qtyBaked = row.qtyBaked ? parseInt(row.qtyBaked) : qtySold;
 
     // Recipe lookup (cached)
     let recipeId = recipeCache.get(recipeName);
@@ -184,8 +178,8 @@ async function importSales(
     }
 
     try {
-      await prisma.sale.create({
-        data: { tenantId, recipeId, qty, revenue, source: "CSV_IMPORT", soldAt },
+      await prisma.wasteLog.create({
+        data: { tenantId, recipeId, date: soldAt, qtyBaked, qtySold },
       });
       result.created++;
     } catch (err) {

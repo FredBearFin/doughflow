@@ -8,24 +8,22 @@ import { useTier } from "@/hooks/useTier";
 import { TierGate } from "@/components/TierGate";
 import { formatUnit } from "@/types";
 import { AlertTriangle, CheckCircle2, TrendingUp } from "lucide-react";
-import type { ForecastMethod } from "@/lib/forecast";
+import type { ForecastTier } from "@/lib/forecast";
 
 // ─── Method display maps ──────────────────────────────────────────────────────
 
+type ForecastMethod = ForecastTier;
+
 const METHOD_LABEL: Record<ForecastMethod, string> = {
-  NAIVE: "Naïve",
-  SMA: "SMA",
-  SES: "Exp. Smoothing",
-  HOLT: "Holt (trend)",
-  HOLT_WINTERS: "Holt-Winters",
+  none:          "No data",
+  wma:           "Avg (WMA)",
+  "holt-winters": "Holt-Winters",
 };
 
 const METHOD_COLOR: Record<ForecastMethod, string> = {
-  NAIVE: "bg-stone-100 text-stone-600",
-  SMA: "bg-stone-100 text-stone-600",
-  SES: "bg-blue-50 text-blue-700",
-  HOLT: "bg-violet-50 text-violet-700",
-  HOLT_WINTERS: "bg-amber-50 text-amber-700",
+  none:          "bg-stone-100 text-stone-400",
+  wma:           "bg-blue-50 text-blue-700",
+  "holt-winters": "bg-amber-50 text-amber-700",
 };
 
 // ─── Mock data for the blurred free-tier preview ──────────────────────────────
@@ -41,21 +39,21 @@ const MOCK_PLANS: Array<{
   {
     name: "Sourdough Loaf",
     units: 12,
-    method: "HOLT_WINTERS",
+    method: "holt-winters" as ForecastMethod,
     mape: 8.2,
     weekly: [12, 10, 14, 11, 13, 12, 15],
   },
   {
     name: "Cinnamon Roll",
     units: 24,
-    method: "HOLT",
+    method: "holt-winters" as ForecastMethod,
     mape: 11.4,
     weekly: [24, 20, 22, 26, 24, 28, 25],
   },
   {
     name: "Honey Focaccia",
     units: 8,
-    method: "SES",
+    method: "wma" as ForecastMethod,
     mape: 14.1,
     weekly: [8, 6, 9, 7, 8, 10, 9],
   },

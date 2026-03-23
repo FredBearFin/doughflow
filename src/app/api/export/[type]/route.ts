@@ -4,16 +4,16 @@ import { stringifyCSV } from "@/lib/csv";
 
 const TEMPLATES: Record<string, { columns: string[]; example: Record<string, string> }> = {
   ingredients: {
-    columns: ["name", "unit", "currentStock", "reorderPoint", "costPerUnit", "sku"],
-    example: { name: "Bread Flour", unit: "LB", currentStock: "50", reorderPoint: "10", costPerUnit: "0.85", sku: "" },
+    columns: ["name", "unit", "currentStock", "reorderPoint", "costPerUnit"],
+    example: { name: "Bread Flour", unit: "LB", currentStock: "50", reorderPoint: "10", costPerUnit: "0.85" },
   },
   sales: {
-    columns: ["date", "recipeName", "qty", "revenue"],
-    example: { date: "2026-03-20", recipeName: "Sourdough Loaf", qty: "12", revenue: "96.00" },
+    columns: ["date", "recipeName", "qtySold", "qtyBaked"],
+    example: { date: "2026-03-20", recipeName: "Sourdough Loaf", qtySold: "10", qtyBaked: "12" },
   },
   waste: {
-    columns: ["date", "ingredientName", "qty", "reason"],
-    example: { date: "2026-03-20", ingredientName: "Bread Flour", qty: "2.5", reason: "Overproduction" },
+    columns: ["date", "recipeName", "qtyBaked", "qtySold", "qtyWasted"],
+    example: { date: "2026-03-20", recipeName: "Sourdough Loaf", qtyBaked: "12", qtySold: "10", qtyWasted: "2" },
   },
 };
 
@@ -58,33 +58,34 @@ export async function GET(
         unit: i.unit,
         currentStock: i.currentStock,
         reorderPoint: i.reorderPoint,
-        costPerUnit: i.costPerUnit,
-        sku: i.sku ?? "",
+        costPerUnit: i.costPerUnit ?? "",
       }));
     } else if (type === "sales") {
-      const data = await prisma.sale.findMany({
+      // Export bake/sell records — our WasteLog captures both baked + sold qty
+      const data = await prisma.wasteLog.findMany({
         where: { tenantId },
         include: { recipe: true },
-        orderBy: { soldAt: "desc" },
+        orderBy: { date: "desc" },
       });
-      rows = data.map((s) => ({
-        date: s.soldAt.toISOString().split("T")[0],
-        recipeName: s.recipe.name,
-        qty: s.qty,
-        revenue: s.revenue.toFixed(2),
+      rows = data.map((w) => ({
+        date: w.date.toISOString().split("T")[0],
+        recipeName: w.recipe.name,
+        qtySold: w.qtySold,
+        qtyBaked: w.qtyBaked,
       }));
     } else {
       // waste
       const data = await prisma.wasteLog.findMany({
         where: { tenantId },
-        include: { ingredient: true },
-        orderBy: { createdAt: "desc" },
+        include: { recipe: true },
+        orderBy: { date: "desc" },
       });
       rows = data.map((w) => ({
-        date: w.createdAt.toISOString().split("T")[0],
-        ingredientName: w.ingredient.name,
-        qty: w.qty,
-        reason: w.reason ?? "",
+        date: w.date.toISOString().split("T")[0],
+        recipeName: w.recipe.name,
+        qtyBaked: w.qtyBaked,
+        qtySold: w.qtySold,
+        qtyWasted: w.qtyBaked - w.qtySold,
       }));
     }
   }
