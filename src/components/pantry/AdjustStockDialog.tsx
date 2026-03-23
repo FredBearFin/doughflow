@@ -154,13 +154,13 @@ export function AdjustStockDialog({
           {/* Adjustment quantity — signed number input */}
           <div className="space-y-1.5">
             <Label htmlFor="qty">
-              Adjustment ({ingredient.unit === "EACH" ? "count" : ingredient.unit.toLowerCase()})
+              Adjustment ({ingredient.unit.toLowerCase()})
             </Label>
             <Input
               id="qty"
               type="number"
-              step={ingredient.unit === "EACH" ? "1" : "0.01"}
-              placeholder={ingredient.unit === "EACH" ? "e.g. 12 or -6" : "e.g. 5 or -2.5"}
+              step={ingredient.wholeUnitsOnly ? "1" : "0.01"}
+              placeholder={ingredient.wholeUnitsOnly ? "e.g. 12 or -6" : "e.g. 5 or -2.5"}
               {...register("qty", { valueAsNumber: true })}
             />
             {errors.qty && <p className="text-xs text-red-600">{errors.qty.message}</p>}

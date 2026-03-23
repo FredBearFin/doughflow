@@ -44,11 +44,12 @@ const UNITS = ["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH"] as const;
 type Unit = typeof UNITS[number];
 
 const schema = z.object({
-  name:         z.string().min(1, "Name required"),
-  unit:         z.enum(UNITS),
-  currentStock: z.number().min(0),
-  reorderPoint: z.number().min(0),
-  costPerUnit:  z.number().min(0).nullable().optional(),
+  name:           z.string().min(1, "Name required"),
+  unit:           z.enum(UNITS),
+  currentStock:   z.number().min(0),
+  reorderPoint:   z.number().min(0),
+  costPerUnit:    z.number().min(0).nullable().optional(),
+  wholeUnitsOnly: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -115,22 +116,25 @@ export function IngredientFormDialog({
     resolver: zodResolver(schema),
     defaultValues: ingredient
       ? {
-          name:         ingredient.name,
-          unit:         ingredient.unit as Unit,
-          currentStock: ingredient.currentStock,
-          reorderPoint: ingredient.reorderPoint,
-          costPerUnit:  ingredient.costPerUnit ?? undefined,
+          name:           ingredient.name,
+          unit:           ingredient.unit as Unit,
+          currentStock:   ingredient.currentStock,
+          reorderPoint:   ingredient.reorderPoint,
+          costPerUnit:    ingredient.costPerUnit ?? undefined,
+          wholeUnitsOnly: ingredient.wholeUnitsOnly,
         }
       : {
-          unit:         "LB", // Most common bakery bulk unit
-          currentStock: 0,
-          reorderPoint: 0,
-          costPerUnit:  undefined,
+          unit:           "LB",
+          currentStock:   0,
+          reorderPoint:   0,
+          costPerUnit:    undefined,
+          wholeUnitsOnly: false,
         },
   });
 
   const selectedUnit = (watch("unit") ?? "LB") as Unit;
-  const isEach = selectedUnit === "EACH";
+  const wholeUnitsOnly = watch("wholeUnitsOnly");
+  const step = wholeUnitsOnly ? "1" : "0.01";
 
   const onSubmit = (data: FormValues) => {
     const costPerUnit = data.costPerUnit ?? undefined;
@@ -180,6 +184,19 @@ export function IngredientFormDialog({
             </Select>
           </div>
 
+          {/* Whole units only toggle */}
+          <div className="flex items-center gap-2">
+            <input
+              id="wholeUnitsOnly"
+              type="checkbox"
+              className="h-4 w-4 rounded border-stone-300 accent-amber-500"
+              {...register("wholeUnitsOnly")}
+            />
+            <Label htmlFor="wholeUnitsOnly" className="font-normal cursor-pointer">
+              Whole numbers only <span className="text-stone-400">(e.g. eggs, rolls, sticks of butter)</span>
+            </Label>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             {/* Current stock — only shown when creating; use Adjust Stock to change it after */}
             {!isEdit && (
@@ -188,14 +205,11 @@ export function IngredientFormDialog({
                 <Input
                   id="currentStock"
                   type="number"
-                  step={isEach ? "1" : "0.01"}
+                  step={step}
                   min="0"
                   placeholder="0"
                   {...register("currentStock", { valueAsNumber: true })}
                 />
-                {isEach && (
-                  <p className="text-xs text-stone-400">Whole numbers only (e.g. 12 eggs)</p>
-                )}
               </div>
             )}
 
@@ -205,7 +219,7 @@ export function IngredientFormDialog({
               <Input
                 id="reorderPoint"
                 type="number"
-                step={isEach ? "1" : "0.01"}
+                step={step}
                 min="0"
                 placeholder="0"
                 {...register("reorderPoint", { valueAsNumber: true })}
