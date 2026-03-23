@@ -38,19 +38,12 @@ export const analyticsRouter = router({
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const [ingredientCount, lowStockCount, recentLogs] = await Promise.all([
-        // Total active ingredients in the pantry
-        ctx.prisma.ingredient.count({
-          where: { tenantId: input.tenantId, active: true },
-        }),
-
-        // Ingredients at or below their low-stock alert threshold
-        ctx.prisma.ingredient.count({
-          where: {
-            tenantId:     input.tenantId,
-            active:       true,
-            currentStock: { lte: ctx.prisma.ingredient.fields.reorderPoint },
-          },
+      const [ingredients, recentLogs] = await Promise.all([
+        // Fetch all active ingredients to compute counts in JS
+        // (Prisma cannot compare two columns in a count filter)
+        ctx.prisma.ingredient.findMany({
+          where:  { tenantId: input.tenantId, active: true },
+          select: { currentStock: true, reorderPoint: true },
         }),
 
         // Waste logs with recipe + BOM so we can calculate ingredient cost of waste
@@ -65,6 +58,11 @@ export const analyticsRouter = router({
           },
         }),
       ]);
+
+      const ingredientCount = ingredients.length;
+      const lowStockCount = ingredients.filter(
+        (i) => i.reorderPoint > 0 && i.currentStock <= i.reorderPoint
+      ).length;
 
       // Total units wasted (qtyBaked - qtySold) across all logs in 30d
       const recentWasteUnits = recentLogs.reduce(

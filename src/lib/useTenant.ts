@@ -55,6 +55,7 @@ import { useEffect, useState } from "react";
 // Simple client-side tenant cache
 // In production: use a proper context or server component
 let cachedTenantId: string | null = null;
+let cachedUserId: string | null = null;
 
 /**
  * useTenantId — Returns the current user's tenantId, or null while loading.
@@ -78,18 +79,26 @@ export function useTenantId(): string | null {
   const [tenantId, setTenantId] = useState<string | null>(cachedTenantId);
 
   useEffect(() => {
-    // Skip fetch if we already have a cached value
-    if (cachedTenantId) return;
     // Skip fetch if the session hasn't loaded yet (user.id is undefined)
     if (!session?.user?.id) return;
+
+    // If the user changed (sign-out + sign-in as different account), bust the cache
+    if (cachedUserId && cachedUserId !== session.user.id) {
+      cachedTenantId = null;
+      cachedUserId = null;
+      setTenantId(null);
+    }
+
+    // Skip fetch if we already have a cached value for this user
+    if (cachedTenantId) return;
 
     // Fetch the tenant ID from the API route, which looks up the TenantUser join
     fetch("/api/tenant")
       .then((r) => r.json())
       .then((data) => {
         if (data.tenantId) {
-          // Write to both the module cache and local state
           cachedTenantId = data.tenantId;
+          cachedUserId = session.user?.id ?? null;
           setTenantId(data.tenantId);
         }
       })

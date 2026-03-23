@@ -34,61 +34,99 @@ export default function PricingPage() {
       {/* Header */}
       <section className="max-w-3xl mx-auto px-8 pt-20 pb-10 text-center">
         <h1 className="text-4xl font-bold text-stone-900 mb-4">
-          Simple, flat pricing
+          Pricing that grows with your bakery
         </h1>
         <p className="text-lg text-stone-500">
-          One plan. Every feature. No surprises.
+          Start free. Upgrade when you need more.
         </p>
       </section>
 
-      {/* Pricing card */}
-      <section className="max-w-md mx-auto px-8 pb-20">
-        <div className="rounded-2xl bg-white border-2 border-amber-400 shadow-lg p-8">
-          {/* Plan name + badge */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-stone-900">Bakery Plan</h2>
-            <span className="text-xs font-semibold bg-amber-100 text-amber-700 px-3 py-1 rounded-full">
+      {/* Pricing cards */}
+      <section className="max-w-4xl mx-auto px-8 pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {/* Starter */}
+          <div className="rounded-2xl bg-white border border-stone-200 p-7">
+            <h2 className="text-lg font-bold text-stone-900 mb-1">Starter</h2>
+            <p className="text-sm text-stone-400 mb-5">Solo baker or home operation</p>
+            <div className="mb-5">
+              <span className="text-4xl font-bold text-stone-900">$9</span>
+              <span className="text-stone-400 ml-1">/month</span>
+            </div>
+            <Link
+              href="/login"
+              className="block w-full text-center h-11 leading-[2.75rem] rounded-xl border border-stone-200 text-stone-700 font-semibold hover:bg-stone-50 transition-colors mb-6 text-sm"
+            >
+              Start free trial
+            </Link>
+            <ul className="space-y-2.5 text-sm text-stone-600">
+              {["Up to 10 products", "Demand forecast", "Pantry & low-stock alerts", "End-of-day logging"].map((f) => (
+                <li key={f} className="flex items-start gap-2"><span className="text-amber-500 font-bold">✓</span>{f}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Pro — highlighted */}
+          <div className="rounded-2xl bg-white border-2 border-amber-400 shadow-lg p-7 relative">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold bg-amber-500 text-white px-3 py-1 rounded-full">
               Most popular
             </span>
+            <h2 className="text-lg font-bold text-stone-900 mb-1">Pro</h2>
+            <p className="text-sm text-stone-400 mb-5">Small bakery, farmers market, café</p>
+            <div className="mb-5">
+              <span className="text-4xl font-bold text-stone-900">$29</span>
+              <span className="text-stone-400 ml-1">/month</span>
+            </div>
+            <Link
+              href="/login"
+              className="block w-full text-center h-11 leading-[2.75rem] rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors mb-6 text-sm"
+            >
+              Start free trial
+            </Link>
+            <ul className="space-y-2.5 text-sm text-stone-600">
+              {[
+                "Unlimited products",
+                "Demand forecast + event overrides",
+                "Waste analytics + dollar cost tracking",
+                "Ingredient feasibility check",
+                "Pantry & low-stock alerts",
+                "Bill of materials per product",
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2"><span className="text-amber-500 font-bold">✓</span>{f}</li>
+              ))}
+            </ul>
           </div>
 
-          {/* Price */}
-          <div className="mb-6">
-            <span className="text-5xl font-bold text-stone-900">$49</span>
-            <span className="text-stone-400 ml-1">/month</span>
-            <p className="text-sm text-stone-400 mt-1">14-day free trial · No credit card required</p>
+          {/* Scale */}
+          <div className="rounded-2xl bg-white border border-stone-200 p-7">
+            <h2 className="text-lg font-bold text-stone-900 mb-1">Scale</h2>
+            <p className="text-sm text-stone-400 mb-5">Multi-location or wholesale</p>
+            <div className="mb-5">
+              <span className="text-4xl font-bold text-stone-900">$39</span>
+              <span className="text-stone-400 ml-1">/month</span>
+            </div>
+            <Link
+              href="/login"
+              className="block w-full text-center h-11 leading-[2.75rem] rounded-xl border border-stone-200 text-stone-700 font-semibold hover:bg-stone-50 transition-colors mb-6 text-sm"
+            >
+              Start free trial
+            </Link>
+            <ul className="space-y-2.5 text-sm text-stone-600">
+              {[
+                "Everything in Pro",
+                "Multiple locations",
+                "Team member accounts",
+                "Priority support",
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2"><span className="text-amber-500 font-bold">✓</span>{f}</li>
+              ))}
+            </ul>
           </div>
-
-          {/* CTA */}
-          <Link
-            href="/login"
-            className="block w-full text-center h-12 leading-[3rem] rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors mb-8"
-          >
-            Start free trial
-          </Link>
-
-          {/* Feature list */}
-          <ul className="space-y-3 text-sm text-stone-600">
-            {[
-              "Daily demand forecast for every product",
-              "Ingredient feasibility check",
-              "Digital pantry with low-stock alerts",
-              "Bill of materials for every product",
-              "End-of-day waste logging",
-              "Waste analytics + dollar cost tracking",
-              "Unlimited ingredients and products",
-              "Unlimited team members",
-            ].map((feature) => (
-              <li key={feature} className="flex items-start gap-2.5">
-                <span className="text-amber-500 font-bold mt-0.5">✓</span>
-                {feature}
-              </li>
-            ))}
-          </ul>
         </div>
 
+        <p className="text-center text-sm text-stone-400 mb-10">14-day free trial on all plans · No credit card required</p>
+
         {/* FAQ */}
-        <div className="mt-10 space-y-6">
+        <div className="max-w-xl mx-auto space-y-6">
           {[
             {
               q: "What happens after the trial?",

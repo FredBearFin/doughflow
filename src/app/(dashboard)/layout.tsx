@@ -18,6 +18,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SidebarProvider } from "@/components/layout/sidebar-context";
 
 /**
  * DashboardLayout is the shared shell for all dashboard pages.
@@ -31,12 +32,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!session?.user) redirect("/login");
 
   return (
-    // Full-height flex container; overflow-hidden prevents double scrollbars
-    <div className="flex h-screen overflow-hidden bg-stone-50">
-      {/* Fixed-width navigation sidebar shared across all dashboard pages */}
-      <Sidebar />
-      {/* Main content area scrolls independently of the sidebar */}
-      <main className="flex-1 overflow-y-auto">{children}</main>
-    </div>
+    <SidebarProvider>
+      <div className="flex h-screen overflow-hidden bg-stone-50">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
+    </SidebarProvider>
   );
 }

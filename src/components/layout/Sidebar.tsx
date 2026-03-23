@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "./sidebar-context";
 
 // Core navigation items — lean set matching the app's focused scope
 const nav = [
@@ -31,9 +32,26 @@ const nav = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { open, setOpen } = useSidebar();
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r border-stone-200 bg-white">
+    <>
+      {/* Mobile backdrop */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+    <aside className={cn(
+      "flex h-screen w-60 flex-col border-r border-stone-200 bg-white",
+      // Mobile: fixed overlay drawer, slides in from left
+      "fixed inset-y-0 left-0 z-50 transition-transform duration-200",
+      // Desktop: static sidebar in normal flow
+      "md:relative md:z-auto md:translate-x-0",
+      open ? "translate-x-0" : "-translate-x-full"
+    )}>
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 px-6 border-b border-stone-100">
         <div className="h-8 w-8 rounded-lg bg-amber-500 flex items-center justify-center">
@@ -51,6 +69,7 @@ export function Sidebar() {
             <Link
               key={href}
               href={href}
+              onClick={() => setOpen(false)}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-0.5",
                 active
@@ -76,5 +95,6 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }

@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(node \"C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js\" run db:migrate -- --name add-forecast-events)",
+      "Bash(node \"C:/Program Files/nodejs/node_modules/npx-cli.js\" prisma migrate dev --name add-forecast-events)",
+      "Bash(node \"C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js\" run)",
+      "Bash(node node_modules/.bin/prisma migrate dev --name add-forecast-events)",
+      "Read(//c/Users/fww13/Desktop/my_projects/doughflow/node_modules/.bin/**)",
+      "Read(//c/Users/fww13/Desktop/my_projects/doughflow/node_modules/prisma/build/**)",
+      "Bash(node \"C:\\\\Users\\\\fww13\\\\Desktop\\\\my_projects\\\\doughflow\\\\node_modules\\\\prisma\\\\build\\\\index.js\" migrate dev --name add-forecast-events)",
+      "Bash(cp \"C:\\\\Users\\\\fww13\\\\Desktop\\\\my_projects\\\\doughflow\\\\.env\" \"C:\\\\Users\\\\fww13\\\\Desktop\\\\my_projects\\\\doughflow\\\\.claude\\\\worktrees\\\\cranky-wright\\\\.env\")",
+      "Bash(cp \"C:\\\\Users\\\\fww13\\\\Desktop\\\\my_projects\\\\doughflow\\\\.env.local\" \"C:\\\\Users\\\\fww13\\\\Desktop\\\\my_projects\\\\doughflow\\\\.claude\\\\worktrees\\\\cranky-wright\\\\.env.local\")",
+      "Bash(node \"C:\\\\Users\\\\fww13\\\\Desktop\\\\my_projects\\\\doughflow\\\\node_modules\\\\prisma\\\\build\\\\index.js\" db push)",
+      "Bash(node \"C:\\\\Users\\\\fww13\\\\Desktop\\\\my_projects\\\\doughflow\\\\node_modules\\\\prisma\\\\build\\\\index.js\" db push --accept-data-loss)",
+      "Bash(node \"C:\\\\Users\\\\fww13\\\\Desktop\\\\my_projects\\\\doughflow\\\\node_modules\\\\typescript\\\\bin\\\\tsc\" --noEmit)",
+      "Bash(node -e \"console.log\\(require\\(''crypto''\\).randomBytes\\(32\\).toString\\(''base64''\\)\\)\")",
+      "Bash(gh pr:*)",
+      "Bash(find \"/Users/fww13/Desktop/my_projects/doughflow/.claude/worktrees/cranky-wright/src/app/\\(dashboard\\)/pantry\" -type f -name \"*.tsx\")",
+      "Bash(ls -la \"C:/Users/fww13/Desktop/my_projects/doughflow/.claude/worktrees/cranky-wright/src/app/\\(dashboard\\)\")",
+      "Bash(grep -A5 \"currentStock.*increment\\\\|currentStock.*decrement\" src/server/routers/*.ts)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
+    ]
+  }
+}
