@@ -48,6 +48,7 @@ const badgeVariants = cva(
         ok: "bg-green-100 text-green-800",
         low: "bg-amber-100 text-amber-800",
         critical: "bg-red-100 text-red-800",
+        out: "bg-stone-900 text-white",
         // Generic variants
         pending: "bg-indigo-100 text-indigo-800",
         default: "bg-stone-100 text-stone-800",
