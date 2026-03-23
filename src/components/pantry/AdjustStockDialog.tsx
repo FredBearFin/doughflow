@@ -159,8 +159,8 @@ export function AdjustStockDialog({
             <Input
               id="qty"
               type="number"
-              step="0.01"
-              placeholder="e.g. 5000 or -200"
+              step={ingredient.wholeUnitsOnly ? "1" : "0.01"}
+              placeholder={ingredient.wholeUnitsOnly ? "e.g. 12 or -6" : "e.g. 5 or -2.5"}
               {...register("qty", { valueAsNumber: true })}
             />
             {errors.qty && <p className="text-xs text-red-600">{errors.qty.message}</p>}

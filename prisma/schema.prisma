@@ -45,11 +45,12 @@ model Ingredient {
   id            String   @id @default(cuid())
   tenantId      String
   name          String
-  unit          String   @default("LB")    // US bakery units: LB | OZ | FL_OZ | CUP | TBSP | TSP | EACH
-  currentStock  Float    @default(0)
-  reorderPoint  Float    @default(0)       // Low-stock alert threshold
-  costPerUnit   Float?                     // Optional: cost per 1 unit in local currency (e.g. $0.009 per gram)
-  active        Boolean  @default(true)
+  unit           String   @default("LB")    // US bakery units: LB | OZ | FL_OZ | CUP | TBSP | TSP | EACH
+  currentStock   Float    @default(0)
+  reorderPoint   Float    @default(0)       // Low-stock alert threshold
+  costPerUnit    Float?                     // Optional: cost per 1 unit in local currency
+  wholeUnitsOnly Boolean  @default(false)   // When true, all quantity inputs enforce integers (e.g. eggs, rolls)
+  active         Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
