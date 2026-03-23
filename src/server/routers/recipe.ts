@@ -7,15 +7,27 @@ import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 
 export const recipeRouter = router({
-  // List all active products with their ingredient BOM
+  // List all active products with their ingredient BOM + computed BOM cost per unit
   getAll: protectedProcedure
     .input(z.object({ tenantId: z.string() }))
     .query(async ({ input, ctx }) => {
-      return ctx.prisma.recipe.findMany({
+      const recipes = await ctx.prisma.recipe.findMany({
         where:   { tenantId: input.tenantId, active: true },
         include: { ingredients: { include: { ingredient: true } } },
         orderBy: { name: "asc" },
       });
+      // Compute BOM cost per unit from ingredient costs (null if any cost is missing)
+      return recipes.map((r) => ({
+        ...r,
+        bomCostPerUnit:
+          r.ingredients.length > 0 &&
+          r.ingredients.every((l) => l.ingredient.costPerUnit != null)
+            ? r.ingredients.reduce(
+                (sum, l) => sum + l.quantity * l.ingredient.costPerUnit!,
+                0
+              ) / r.batchSize
+            : null,
+      }));
     }),
 
   // Fetch a single product with BOM (includes inactive for detail page access)
@@ -38,6 +50,7 @@ export const recipeRouter = router({
         name:        z.string().min(1),
         description: z.string().optional(),
         batchSize:   z.number().int().min(1).default(1), // Units produced per batch
+        retailPrice: z.number().min(0).optional(),       // Retail sell price per unit
         ingredients: z.array(
           z.object({
             ingredientId: z.string(),
@@ -72,6 +85,7 @@ export const recipeRouter = router({
         name:        z.string().min(1).optional(),
         description: z.string().optional(),
         batchSize:   z.number().int().min(1).optional(),
+        retailPrice: z.number().min(0).optional(),
         ingredients: z
           .array(
             z.object({

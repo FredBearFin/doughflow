@@ -10,7 +10,6 @@ import {
   Package,
   UtensilsCrossed,
   ClipboardList,
-  BarChart2,
   CalendarDays,
   Settings,
   LogOut,
@@ -21,13 +20,12 @@ import { useSidebar } from "./sidebar-context";
 
 // Core navigation items — lean set matching the app's focused scope
 const nav = [
-  { href: "/overview",  label: "Overview",    icon: LayoutDashboard },
-  { href: "/pantry",    label: "Pantry",       icon: Package },
-  { href: "/recipes",   label: "Products",     icon: UtensilsCrossed },
-  { href: "/waste",     label: "End of Day",   icon: ClipboardList },
-  { href: "/analytics", label: "Analytics",    icon: BarChart2 },
-  { href: "/events",    label: "Event Overrides", icon: CalendarDays },
-  { href: "/settings",  label: "Settings",     icon: Settings },
+  { href: "/overview",  label: "Today's Kitchen", icon: LayoutDashboard },
+  { href: "/pantry",    label: "Pantry",           icon: Package },
+  { href: "/recipes",   label: "Products",         icon: UtensilsCrossed },
+  { href: "/waste",     label: "End of Day",       icon: ClipboardList },
+  { href: "/events",    label: "Event Overrides",  icon: CalendarDays },
+  { href: "/settings",  label: "Settings",         icon: Settings },
 ];
 
 export function Sidebar() {

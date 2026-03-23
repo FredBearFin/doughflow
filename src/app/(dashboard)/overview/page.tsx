@@ -1,13 +1,9 @@
 /**
- * Overview page — /overview
+ * Today's Kitchen — /overview
  *
- * The main dashboard. Shows three things:
- *   1. KPI cards: ingredient count, low stock alert count, and waste cost (or units)
- *   2. Demand forecast panel — the hero feature: "What to bake today"
- *   3. Low stock alerts — any ingredient at or below its alert threshold
- *
- * The waste KPI shows dollar value (e.g. "$47 wasted") when any ingredient has
- * a costPerUnit set, and falls back to unit count when costs aren't configured.
+ * The unified command center. Two sections:
+ *   1. Baking commands (above the fold) — urgent baking list + low stock alerts
+ *   2. Waste trends (below the fold) — absorbed from the old Analytics page
  *
  * This is a Client Component because it reads tenantId from the client session.
  */
@@ -19,74 +15,57 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
 import { formatCurrency } from "@/lib/utils";
-import { DemandForecastPanel } from "@/components/demand/DemandForecastPanel";
-import { Package, AlertTriangle, DollarSign, Trash2 } from "lucide-react";
+import { BakingCommandList } from "@/components/demand/BakingCommandList";
+import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function OverviewPage() {
   const tenantId = useTenantId();
-
-  const { data: overview, isLoading } = trpc.analytics.overview.useQuery(
-    { tenantId: tenantId! },
-    { enabled: !!tenantId }
-  );
 
   const { data: ingredients } = trpc.ingredient.getAll.useQuery(
     { tenantId: tenantId! },
     { enabled: !!tenantId }
   );
 
-  // Items that are at or below their low-stock threshold
+  // Waste trend data (from the old analytics page)
+  const { data: wasteByProduct } = trpc.analytics.wasteByProduct.useQuery(
+    { tenantId: tenantId!, days: 30 },
+    { enabled: !!tenantId }
+  );
+  const { data: wasteByDay } = trpc.analytics.wasteByDayOfWeek.useQuery(
+    { tenantId: tenantId!, days: 90 },
+    { enabled: !!tenantId }
+  );
+
+  // Aggregate waste KPIs
+  const totalWasted = wasteByProduct?.reduce((s, p) => s + p.totalWasted, 0) ?? 0;
+  const totalBaked  = wasteByProduct?.reduce((s, p) => s + p.totalBaked,  0) ?? 0;
+  const wasteRate   = totalBaked > 0 ? ((totalWasted / totalBaked) * 100).toFixed(1) : "0";
+  const totalCost   = wasteByProduct?.reduce((s, p) => s + p.costOfWaste, 0) ?? 0;
+  const hasCostData = totalCost > 0;
+
   const lowStockItems = ingredients?.filter(
     (i) => i.reorderPoint > 0 && i.currentStock <= i.reorderPoint
   ) ?? [];
 
-  // Use dollar KPI when cost data is available, otherwise fall back to units
-  const hasCostData = (overview?.wasteCost30d ?? 0) > 0;
-
   return (
     <div>
-      <TopBar title="Overview" />
-      <div className="p-6 space-y-6">
+      <TopBar title="Today's Kitchen" />
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
 
-        {/* KPI cards */}
-        <div className="grid grid-cols-3 gap-4">
-          <StatCard
-            label="Ingredients"
-            value={overview?.ingredientCount ?? "—"}
-            icon={<Package className="h-5 w-5 text-amber-500" />}
-            isLoading={isLoading}
-          />
-          <StatCard
-            label="Low Stock"
-            value={overview?.lowStockCount ?? "—"}
-            icon={<AlertTriangle className="h-5 w-5 text-amber-500" />}
-            highlight={(overview?.lowStockCount ?? 0) > 0}
-            isLoading={isLoading}
-          />
-          {/* Waste KPI: show dollars if costs configured, otherwise show units */}
-          <StatCard
-            label={hasCostData ? "Waste Cost (30d)" : "Units Wasted (30d)"}
-            value={
-              hasCostData
-                ? formatCurrency(overview?.wasteCost30d ?? 0)
-                : (overview?.recentWasteUnits ?? "—")
-            }
-            subValue={hasCostData ? `${overview?.recentWasteUnits ?? 0} units` : undefined}
-            icon={
-              hasCostData
-                ? <DollarSign className="h-5 w-5 text-red-400" />
-                : <Trash2 className="h-5 w-5 text-red-400" />
-            }
-            isLoading={isLoading}
-          />
-        </div>
+        {/* ── Baking Command List ────────────────────────────────────── */}
+        <BakingCommandList />
 
-        {/* Hero feature: demand forecast + ingredient feasibility */}
-        <DemandForecastPanel />
-
-        {/* Low stock alerts — only shown when there are items at/below threshold */}
+        {/* ── Low Stock Alerts ──────────────────────────────────────── */}
         {lowStockItems.length > 0 && (
           <Card>
             <CardHeader>
@@ -101,7 +80,7 @@ export default function OverviewPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {lowStockItems.map((ing) => (
                   <Link
                     key={ing.id}
@@ -110,7 +89,9 @@ export default function OverviewPage() {
                   >
                     <span className="font-medium text-stone-900">{ing.name}</span>
                     <span className="tabular-nums text-sm text-red-600 font-medium">
-                      {ing.currentStock <= 0 ? "Out" : `${ing.currentStock.toFixed(1)} ${ing.unit.toLowerCase()} remaining`}
+                      {ing.currentStock <= 0
+                        ? "Out"
+                        : `${ing.currentStock.toFixed(1)} ${ing.unit.toLowerCase()} remaining`}
                     </span>
                   </Link>
                 ))}
@@ -119,61 +100,118 @@ export default function OverviewPage() {
           </Card>
         )}
 
-        {/* Quick action buttons */}
-        <div className="flex flex-wrap gap-3">
-          <Link href="/pantry">
-            <Button variant="outline">
-              <Package className="h-4 w-4" />
-              Manage Pantry
-            </Button>
-          </Link>
-          <Link href="/waste">
-            <Button variant="outline">
-              <Trash2 className="h-4 w-4" />
-              Log End of Day
-            </Button>
-          </Link>
+        {/* ── Waste Trends divider ──────────────────────────────────── */}
+        <div className="flex items-center gap-3 pt-2">
+          <div className="flex-1 border-t border-stone-200" />
+          <span className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Waste Trends</span>
+          <div className="flex-1 border-t border-stone-200" />
         </div>
+
+        {/* Waste KPI cards — 2×2 on mobile, 4 in a row on md+ */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-5">
+              <p className="text-sm text-stone-500 mb-1">Units Wasted (30d)</p>
+              <p className="tabular-nums text-2xl font-bold text-red-600">{totalWasted}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <p className="text-sm text-stone-500 mb-1">Units Baked (30d)</p>
+              <p className="tabular-nums text-2xl font-bold text-stone-900">{totalBaked}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <p className="text-sm text-stone-500 mb-1">Waste Rate (30d)</p>
+              <p className="tabular-nums text-2xl font-bold text-amber-600">{wasteRate}%</p>
+            </CardContent>
+          </Card>
+          <Card className={hasCostData ? "border-red-100" : undefined}>
+            <CardContent className="p-5">
+              <p className="text-sm text-stone-500 mb-1">Waste Cost (30d)</p>
+              {hasCostData ? (
+                <p className="tabular-nums text-2xl font-bold text-red-600">
+                  {formatCurrency(totalCost)}
+                </p>
+              ) : (
+                <p className="text-sm text-stone-400 mt-1 leading-snug">
+                  Set ingredient costs in Pantry to see $
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Waste by day of week bar chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Waste by Day of Week — Last 90 Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {wasteByDay && wasteByDay.some((d) => d.totalWasted > 0) ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={wasteByDay}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E7E5E4" />
+                  <XAxis
+                    dataKey="dayName"
+                    tick={{ fontSize: 12, fill: "#78716C" }}
+                    tickFormatter={(v: string) => v.slice(0, 3)}
+                  />
+                  <YAxis tick={{ fontSize: 12, fill: "#78716C" }} />
+                  <Tooltip
+                    formatter={(value: unknown) => [`${value} units wasted`, "Wasted"]}
+                  />
+                  <Bar dataKey="totalWasted" fill="#F59E0B" radius={[4, 4, 0, 0]} name="Wasted" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-48 flex items-center justify-center text-stone-400">
+                No waste data yet — log some end-of-day results first
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Waste by product breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Waste by Product — Last 30 Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!wasteByProduct || wasteByProduct.length === 0 ? (
+              <p className="text-sm text-stone-400 py-4 text-center">No data yet</p>
+            ) : (
+              <div className="divide-y divide-stone-100">
+                {wasteByProduct.map((p) => (
+                  <div key={p.productName} className="flex items-center justify-between py-3">
+                    <div>
+                      <p className="font-medium text-stone-900">{p.productName}</p>
+                      <p className="text-xs text-stone-400">
+                        {p.totalBaked} baked · {p.totalSold} sold
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="tabular-nums font-semibold text-red-600">
+                        {p.totalWasted} wasted
+                      </p>
+                      {p.costOfWaste > 0 && (
+                        <p className="tabular-nums text-xs text-red-400">
+                          {formatCurrency(p.costOfWaste)}
+                        </p>
+                      )}
+                      <p className="text-xs text-stone-400">
+                        {p.wasteRate.toFixed(1)}% waste rate
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
       </div>
     </div>
-  );
-}
-
-/** KPI stat card with optional sub-label and loading skeleton */
-function StatCard({
-  label,
-  value,
-  icon,
-  highlight,
-  isLoading,
-  subValue,
-}: {
-  label:      string;
-  value:      string | number;
-  icon:       React.ReactNode;
-  highlight?: boolean;
-  isLoading?: boolean;
-  subValue?:  string;
-}) {
-  return (
-    <Card className={highlight ? "border-amber-200 bg-amber-50" : undefined}>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-stone-500">{label}</span>
-          {icon}
-        </div>
-        {isLoading ? (
-          <div className="h-8 w-20 animate-pulse rounded bg-stone-200" />
-        ) : (
-          <>
-            <p className="tabular-nums text-2xl font-bold text-stone-900">{value}</p>
-            {subValue && (
-              <p className="text-xs text-stone-400 mt-0.5">{subValue}</p>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
   );
 }

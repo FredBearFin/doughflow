@@ -333,6 +333,18 @@ export const analyticsRouter = router({
           maxFeasible = Math.min(maxFeasible, maxFromThisIng);
         }
 
+        // Urgency: critical if ingredient short, warning if any BOM ingredient
+        // is at/below its reorder point, none if no data, ok otherwise
+        const hasLowStockIngredient = recipe.ingredients.some((line) => {
+          const { currentStock, reorderPoint } = line.ingredient;
+          return reorderPoint > 0 && currentStock <= reorderPoint;
+        });
+        const urgency: "critical" | "warning" | "ok" | "none" =
+          shortfalls.length > 0  ? "critical"
+          : suggestedQty === null ? "none"
+          : hasLowStockIngredient ? "warning"
+          : "ok";
+
         return {
           productId:     recipe.id,
           productName:   recipe.name,
@@ -344,6 +356,7 @@ export const analyticsRouter = router({
           avgSold,
           mad,
           bias,
+          urgency,
           activeEvent:   activeEvent
             ? { name: activeEvent.name, multiplier: activeEvent.multiplier }
             : null,
@@ -353,6 +366,8 @@ export const analyticsRouter = router({
         };
       });
 
-      return forecasts;
+      // Sort: critical first, then warning, ok, none — most urgent at top
+      const urgencyOrder = { critical: 0, warning: 1, ok: 2, none: 3 } as const;
+      return forecasts.sort((a, b) => urgencyOrder[a.urgency] - urgencyOrder[b.urgency]);
     }),
 });

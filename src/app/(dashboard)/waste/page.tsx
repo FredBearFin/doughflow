@@ -4,7 +4,7 @@
 // Bakers log what they produced and how much was left over at end of day.
 // The app uses this data to learn demand patterns and suggest bake quantities.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -88,6 +88,7 @@ export default function WastePage() {
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -96,6 +97,18 @@ export default function WastePage() {
       date: new Date().toISOString().split("T")[0],
     },
   });
+
+  // Pre-fill from URL params when navigating from "Mark as Baked" on the command list
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const rid    = params.get("recipeId");
+    const qty    = params.get("qty");
+    if (rid) setValue("recipeId", rid);
+    if (qty) {
+      const n = parseInt(qty, 10);
+      if (!isNaN(n) && n > 0) setValue("qtyBaked", n);
+    }
+  }, [setValue]);
 
   const qtyBaked = watch("qtyBaked") || 0;
 

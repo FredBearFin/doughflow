@@ -21,7 +21,8 @@
       "Bash(ls -la \"C:/Users/fww13/Desktop/my_projects/doughflow/.claude/worktrees/cranky-wright/src/app/\\(dashboard\\)\")",
       "Bash(grep -A5 \"currentStock.*increment\\\\|currentStock.*decrement\" src/server/routers/*.ts)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Bash(cat \"src/app/\\(dashboard\\)/events/page.tsx\")"
     ]
   }
 }
