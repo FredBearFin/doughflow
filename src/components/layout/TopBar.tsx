@@ -20,6 +20,8 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import { Menu } from "lucide-react";
+import { useSidebar } from "./sidebar-context";
 
 /**
  * Props for the TopBar component.
@@ -42,16 +44,25 @@ interface TopBarProps {
  * @param children - Optional action elements (e.g. "Add Ingredient" button)
  */
 export function TopBar({ title, children }: TopBarProps) {
-  // Read the current auth session to display the user's avatar
   const { data: session } = useSession();
+  const { setOpen } = useSidebar();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-stone-200 bg-white px-6">
-      {/* Page title — styled as an h1 but sized for the compact header */}
-      <h1 className="text-xl font-semibold text-stone-900">{title}</h1>
+    <header className="flex h-16 items-center justify-between border-b border-stone-200 bg-white px-4 md:px-6">
+      <div className="flex items-center gap-3">
+        {/* Hamburger — mobile only */}
+        <button
+          className="md:hidden p-1.5 -ml-1 rounded-lg text-stone-500 hover:bg-stone-100 transition-colors"
+          onClick={() => setOpen(true)}
+          aria-label="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <h1 className="text-xl font-semibold text-stone-900">{title}</h1>
+      </div>
 
       {/* Right-hand area: action slot + user avatar */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         {/* Page-specific action buttons injected by the parent page */}
         {children}
 
