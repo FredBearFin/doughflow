@@ -47,16 +47,46 @@ export const wasteRouter = router({
       });
 
       // Decrement ingredient stock for everything that was baked (not just sold)
-      // We consumed ingredients when we baked, regardless of how many sold
+      // Stock is floored at 0 — cannot go negative.
       for (const line of recipe.ingredients) {
         const consumed = line.quantity * batchesBaked;
+        const current = await ctx.prisma.ingredient.findUnique({
+          where:  { id: line.ingredientId },
+          select: { currentStock: true },
+        });
+        const newStock = Math.max(0, (current?.currentStock ?? 0) - consumed);
         await ctx.prisma.ingredient.update({
           where: { id: line.ingredientId },
-          data:  { currentStock: { decrement: consumed } },
+          data:  { currentStock: newStock },
         });
       }
 
       return wasteLog;
+    }),
+
+  // Delete a waste log and reverse the ingredient stock decrements
+  delete: protectedProcedure
+    .input(z.object({ id: z.string(), tenantId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      // Fetch the log with BOM so we can reverse stock decrements
+      const log = await ctx.prisma.wasteLog.findFirst({
+        where:   { id: input.id, tenantId: input.tenantId },
+        include: { recipe: { include: { ingredients: true } } },
+      });
+      if (!log) throw new Error("Log not found");
+
+      const batchesBaked = log.qtyBaked / log.recipe.batchSize;
+
+      // Re-add the consumed ingredients back to stock
+      for (const line of log.recipe.ingredients) {
+        const consumed = line.quantity * batchesBaked;
+        await ctx.prisma.ingredient.update({
+          where: { id: line.ingredientId },
+          data:  { currentStock: { increment: consumed } },
+        });
+      }
+
+      return ctx.prisma.wasteLog.delete({ where: { id: input.id } });
     }),
 
   // Fetch end-of-day logs for the last N days, newest first

@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
 import { formatDate, formatCurrency } from "@/lib/utils";
-import { ClipboardList, CheckCircle2 } from "lucide-react";
+import { ClipboardList, CheckCircle2, Trash2 } from "lucide-react";
 
 // Form validation schema
 const schema = z.object({
@@ -53,6 +53,18 @@ export default function WastePage() {
     { tenantId: tenantId!, days: 30 },
     { enabled: !!tenantId }
   );
+
+  const deleteLog = trpc.waste.delete.useMutation({
+    onSuccess: () => {
+      utils.waste.getRecent.invalidate();
+      utils.waste.getSummary.invalidate();
+      utils.ingredient.getAll.invalidate();
+      utils.analytics.wasteByProduct.invalidate();
+      utils.analytics.wasteByDayOfWeek.invalidate();
+      utils.analytics.overview.invalidate();
+      utils.analytics.demandForecast.invalidate();
+    },
+  });
 
   const logWaste = trpc.waste.log.useMutation({
     onSuccess: (_, vars) => {
@@ -257,11 +269,24 @@ export default function WastePage() {
                         <p className="font-medium text-stone-900">{log.recipe.name}</p>
                         <p className="text-xs text-stone-400">{formatDate(log.date)}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="tabular-nums text-stone-600">{log.qtyBaked} baked</p>
-                        <p className="tabular-nums text-red-500 text-xs">
-                          {log.qtyBaked - log.qtySold} wasted
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <p className="tabular-nums text-stone-600">{log.qtyBaked} baked</p>
+                          <p className="tabular-nums text-red-500 text-xs">
+                            {log.qtyBaked - log.qtySold} wasted
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (confirm("Delete this log? Ingredient stock will be restored.")) {
+                              deleteLog.mutate({ id: log.id, tenantId: tenantId! });
+                            }
+                          }}
+                          className="p-1.5 text-stone-300 hover:text-red-500 transition-colors"
+                          title="Delete log"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
