@@ -41,13 +41,18 @@ export const recipeRouter = router({
         ingredients: z.array(
           z.object({
             ingredientId: z.string(),
-            quantity:     z.number().min(0), // Amount per batch
+            quantity:     z.number().min(0.001, "Quantity must be greater than 0"),
           })
         ),
       })
     )
     .mutation(async ({ input, ctx }) => {
       const { ingredients, ...recipeData } = input;
+      // Block duplicate ingredient entries in the same BOM
+      const ids = ingredients.map((l) => l.ingredientId);
+      if (new Set(ids).size !== ids.length) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Each ingredient can only appear once per product" });
+      }
       return ctx.prisma.recipe.create({
         data: {
           ...recipeData,
@@ -71,7 +76,7 @@ export const recipeRouter = router({
           .array(
             z.object({
               ingredientId: z.string(),
-              quantity:     z.number().min(0),
+              quantity:     z.number().min(0.001, "Quantity must be greater than 0"),
             })
           )
           .optional(), // undefined = don't touch the BOM
@@ -81,6 +86,11 @@ export const recipeRouter = router({
       const { id, tenantId, ingredients, ...data } = input;
 
       if (ingredients !== undefined) {
+        // Block duplicate ingredient entries in the same BOM
+        const ids = ingredients.map((l) => l.ingredientId);
+        if (new Set(ids).size !== ids.length) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Each ingredient can only appear once per product" });
+        }
         // Replace all: wipe existing BOM lines then create the new set
         await ctx.prisma.recipeIngredient.deleteMany({ where: { recipeId: id } });
         return ctx.prisma.recipe.update({

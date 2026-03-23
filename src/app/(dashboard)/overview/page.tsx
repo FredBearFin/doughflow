@@ -90,14 +90,19 @@ export default function OverviewPage() {
         {lowStockItems.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                Low Stock Alerts
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Low Stock Alerts
+                </CardTitle>
+                <Link href="/pantry" className="text-xs text-amber-600 hover:underline font-medium">
+                  See all in Pantry →
+                </Link>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {lowStockItems.slice(0, 6).map((ing) => (
+                {lowStockItems.map((ing) => (
                   <Link
                     key={ing.id}
                     href={`/pantry/${ing.id}`}
@@ -105,7 +110,7 @@ export default function OverviewPage() {
                   >
                     <span className="font-medium text-stone-900">{ing.name}</span>
                     <span className="tabular-nums text-sm text-red-600 font-medium">
-                      {ing.currentStock.toFixed(0)} {ing.unit.toLowerCase()} remaining
+                      {ing.currentStock <= 0 ? "Out" : `${ing.currentStock.toFixed(1)} ${ing.unit.toLowerCase()} remaining`}
                     </span>
                   </Link>
                 ))}

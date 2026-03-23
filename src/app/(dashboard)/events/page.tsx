@@ -26,7 +26,10 @@ import { CalendarDays, Trash2, Plus } from "lucide-react";
 
 const schema = z.object({
   name:           z.string().min(1, "Event name is required"),
-  date:           z.string().min(1, "Date is required"),
+  date:           z.string().min(1, "Date is required").refine(
+                    (d) => d >= new Date().toISOString().slice(0, 10),
+                    "Date must be today or in the future"
+                  ),
   multiplier:     z.number({ invalid_type_error: "Enter a number" })
                    .min(0.1, "Must be at least 0.1×")
                    .max(20,  "Max 20×"),

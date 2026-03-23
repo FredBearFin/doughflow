@@ -61,7 +61,8 @@ export const ingredientRouter = router({
       return ctx.prisma.ingredient.update({ where: { id, tenantId }, data });
     }),
 
-  // Atomically adjust stock level (qty is signed: positive = add, negative = remove)
+  // Adjust stock level (qty is signed: positive = add, negative = remove)
+  // Stock is floored at 0 — cannot go negative.
   adjust: protectedProcedure
     .input(
       z.object({
@@ -72,9 +73,14 @@ export const ingredientRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const current = await ctx.prisma.ingredient.findUnique({
+        where:  { id: input.ingredientId },
+        select: { currentStock: true },
+      });
+      const newStock = Math.max(0, (current?.currentStock ?? 0) + input.qty);
       return ctx.prisma.ingredient.update({
         where: { id: input.ingredientId },
-        data:  { currentStock: { increment: input.qty } },
+        data:  { currentStock: newStock },
       });
     }),
 

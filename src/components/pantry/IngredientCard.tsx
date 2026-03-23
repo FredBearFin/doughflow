@@ -17,10 +17,11 @@ interface IngredientCardProps {
 export function IngredientCard({ ingredient }: IngredientCardProps) {
   const status = getStockStatus(ingredient);
 
-  // Bar width proportional to stock vs 3× alert threshold
+  // Bar fills to 100% at 2× reorder point — so the reorder threshold sits at 50%.
+  // Intuition: when the bar hits halfway, it's time to order.
   const stockPct =
     ingredient.reorderPoint > 0
-      ? Math.min((ingredient.currentStock / (ingredient.reorderPoint * 3)) * 100, 100)
+      ? Math.min((ingredient.currentStock / (ingredient.reorderPoint * 2)) * 100, 100)
       : ingredient.currentStock > 0 ? 100 : 0;
 
   const barColor = {
