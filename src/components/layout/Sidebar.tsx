@@ -14,6 +14,7 @@ import {
   Settings,
   LogOut,
   ChefHat,
+  Database,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ const nav = [
   { href: "/recipes",   label: "Products",         icon: UtensilsCrossed },
   { href: "/waste",     label: "End of Day",       icon: ClipboardList },
   { href: "/events",    label: "Event Overrides",  icon: CalendarDays },
+  { href: "/data",      label: "Import / Export",  icon: Database },
   { href: "/settings",  label: "Settings",         icon: Settings },
 ];
 
