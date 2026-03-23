@@ -7,6 +7,10 @@ const TEMPLATES: Record<string, { columns: string[]; example: Record<string, str
     columns: ["name", "unit", "currentStock", "reorderPoint", "costPerUnit"],
     example: { name: "Bread Flour", unit: "LB", currentStock: "50", reorderPoint: "10", costPerUnit: "0.85" },
   },
+  recipes: {
+    columns: ["name", "batchSize", "description", "retailPrice"],
+    example: { name: "Sourdough Loaf", batchSize: "1", description: "Classic sourdough", retailPrice: "8.00" },
+  },
   sales: {
     columns: ["date", "recipeName", "qtySold", "qtyBaked"],
     example: { date: "2026-03-20", recipeName: "Sourdough Loaf", qtySold: "10", qtyBaked: "12" },
@@ -59,6 +63,17 @@ export async function GET(
         currentStock: i.currentStock,
         reorderPoint: i.reorderPoint,
         costPerUnit: i.costPerUnit ?? "",
+      }));
+    } else if (type === "recipes") {
+      const data = await prisma.recipe.findMany({
+        where: { tenantId, active: true },
+        orderBy: { name: "asc" },
+      });
+      rows = data.map((r) => ({
+        name: r.name,
+        batchSize: r.batchSize,
+        description: r.description ?? "",
+        retailPrice: r.retailPrice ?? "",
       }));
     } else if (type === "sales") {
       // Export bake/sell records — our WasteLog captures both baked + sold qty

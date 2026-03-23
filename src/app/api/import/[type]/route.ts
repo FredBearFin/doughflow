@@ -38,6 +38,11 @@ export async function POST(
     return Response.json({ result });
   }
 
+  if (type === "recipes") {
+    const result = await importRecipes(tenantId, rows);
+    return Response.json({ result });
+  }
+
   if (type === "sales") {
     const result = await importSales(tenantId, rows);
     return Response.json({ result });
@@ -124,6 +129,77 @@ async function importIngredients(
   return result;
 }
 
+// ─── Recipes ──────────────────────────────────────────────────────────────────
+
+async function importRecipes(
+  tenantId: string,
+  rows: Record<string, string>[],
+): Promise<ImportResult> {
+  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
+
+  const existing = new Set(
+    (await prisma.recipe.findMany({ where: { tenantId }, select: { name: true } })).map(
+      (r) => r.name,
+    ),
+  );
+
+  for (let i = 0; i < rows.length; i++) {
+    const rowNum = i + 2;
+    const row = rows[i];
+
+    const name = row.name?.trim();
+    if (!name) {
+      result.errors.push({ row: rowNum, message: "missing name" });
+      result.skipped++;
+      continue;
+    }
+
+    const batchSize = row.batchSize ? parseInt(row.batchSize) : 1;
+    if (isNaN(batchSize) || batchSize < 1) {
+      result.errors.push({ row: rowNum, message: `invalid batchSize "${row.batchSize}" — must be integer ≥ 1` });
+      result.skipped++;
+      continue;
+    }
+
+    const description = row.description?.trim() || null;
+    const retailPriceRaw = row.retailPrice?.trim();
+    const retailPrice =
+      retailPriceRaw && !isNaN(parseFloat(retailPriceRaw))
+        ? parseFloat(retailPriceRaw)
+        : undefined;
+
+    try {
+      await prisma.recipe.upsert({
+        where: { tenantId_name: { tenantId, name } },
+        create: {
+          tenantId,
+          name,
+          batchSize,
+          ...(description && { description }),
+          ...(retailPrice !== undefined && { retailPrice }),
+        },
+        update: {
+          batchSize,
+          ...(description !== null && { description }),
+          ...(retailPrice !== undefined && { retailPrice }),
+        },
+      });
+
+      if (existing.has(name)) {
+        result.updated++;
+      } else {
+        result.created++;
+        existing.add(name);
+      }
+    } catch (err) {
+      result.errors.push({ row: rowNum, message: err instanceof Error ? err.message : "DB error" });
+      result.skipped++;
+    }
+  }
+
+  return result;
+}
+
 // ─── Sales ────────────────────────────────────────────────────────────────────
 
 async function importSales(
@@ -132,7 +208,7 @@ async function importSales(
 ): Promise<ImportResult> {
   const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
 
-  // Cache recipe lookups to avoid repeated DB hits for same name
+  // Cache recipe lookups / auto-creates to avoid repeated DB hits for same name
   const recipeCache = new Map<string, string>(); // name → id
 
   for (let i = 0; i < rows.length; i++) {
@@ -161,18 +237,16 @@ async function importSales(
     }
     const qtyBaked = row.qtyBaked ? parseInt(row.qtyBaked) : qtySold;
 
-    // Recipe lookup (cached)
+    // Recipe lookup — auto-create if not found so historical data can be imported
+    // before recipes are fully configured in the app.
     let recipeId = recipeCache.get(recipeName);
     if (!recipeId) {
-      const recipe = await prisma.recipe.findFirst({
-        where: { tenantId, name: recipeName, active: true },
+      const recipe = await prisma.recipe.upsert({
+        where: { tenantId_name: { tenantId, name: recipeName } },
+        create: { tenantId, name: recipeName, batchSize: 1 },
+        update: {}, // don't overwrite existing recipe settings
         select: { id: true },
       });
-      if (!recipe) {
-        result.errors.push({ row: rowNum, message: `recipe not found: "${recipeName}"` });
-        result.skipped++;
-        continue;
-      }
       recipeId = recipe.id;
       recipeCache.set(recipeName, recipeId);
     }

@@ -73,7 +73,8 @@ export default function SettingsPage() {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const ingredientFileRef = useRef<HTMLInputElement>(null);
-  const salesFileRef = useRef<HTMLInputElement>(null);
+  const recipeFileRef     = useRef<HTMLInputElement>(null);
+  const salesFileRef      = useRef<HTMLInputElement>(null);
 
   async function handleImport(type: string, file: File) {
     setImporting(true);
@@ -214,11 +215,55 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {/* Import — Recipes */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-stone-700">Import Recipes</p>
+              <p className="text-xs text-stone-500">
+                <span className="font-medium">Required:</span> name
+                <br />
+                <span className="font-medium">Optional:</span> batchSize (default 1), description, retailPrice
+              </p>
+              <div className="flex gap-2">
+                <input
+                  ref={recipeFileRef}
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImport("recipes", file);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={importing}
+                  onClick={() => recipeFileRef.current?.click()}
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  {importing ? "Importing…" : "Import CSV"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => (window.location.href = "/api/export/recipes?template=1")}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Template
+                </Button>
+              </div>
+            </div>
+
             {/* Import — Sales */}
             <div className="space-y-2">
-              <p className="text-sm font-medium text-stone-700">Import Sales</p>
+              <p className="text-sm font-medium text-stone-700">Import Sales History</p>
               <p className="text-xs text-stone-500">
-                <span className="font-medium">Required:</span> date (YYYY-MM-DD), recipeName, qty, revenue
+                <span className="font-medium">Required:</span> date (YYYY-MM-DD), recipeName, qtySold
+                <br />
+                <span className="font-medium">Optional:</span> qtyBaked (defaults to qtySold)
+                <br />
+                <span className="text-stone-400">Recipes are auto-created if they don&apos;t exist yet.</span>
               </p>
               <div className="flex gap-2">
                 <input
