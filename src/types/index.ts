@@ -19,11 +19,12 @@ export type TenantWithUsers = Tenant & {
   users: (TenantUser & { user: User })[];
 };
 
-// Three-tier stock health indicator
-export type StockStatus = "ok" | "low" | "critical";
+// Four-tier stock health indicator
+export type StockStatus = "ok" | "low" | "critical" | "out";
 
 // Derive stock status from ingredient's current stock vs low-stock threshold
 export function getStockStatus(ingredient: Ingredient): StockStatus {
+  if (ingredient.currentStock <= 0) return "out";
   const safetyStock = ingredient.reorderPoint * 0.5;
   if (ingredient.currentStock <= safetyStock && ingredient.reorderPoint > 0) return "critical";
   if (ingredient.currentStock <= ingredient.reorderPoint && ingredient.reorderPoint > 0) return "low";

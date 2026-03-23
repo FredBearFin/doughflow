@@ -6,6 +6,7 @@ import { recipeRouter } from "./recipe";
 import { wasteRouter } from "./waste";
 import { analyticsRouter } from "./analytics";
 import { tenantRouter } from "./tenant";
+import { eventsRouter } from "./events";
 
 export const appRouter = router({
   ingredient: ingredientRouter, // Pantry ingredient CRUD + stock adjustments
@@ -13,6 +14,7 @@ export const appRouter = router({
   waste:      wasteRouter,      // End-of-day bake/waste logging
   analytics:  analyticsRouter,  // Demand forecast, waste analytics, KPIs
   tenant:     tenantRouter,     // Bakery account info + settings
+  events:     eventsRouter,     // Event/promo multipliers for demand forecast
 });
 
 // Shared type for end-to-end type safety between server and client

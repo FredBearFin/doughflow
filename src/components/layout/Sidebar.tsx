@@ -11,6 +11,7 @@ import {
   UtensilsCrossed,
   ClipboardList,
   BarChart2,
+  CalendarDays,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const nav = [
   { href: "/recipes",   label: "Products",     icon: UtensilsCrossed },
   { href: "/waste",     label: "End of Day",   icon: ClipboardList },
   { href: "/analytics", label: "Analytics",    icon: BarChart2 },
+  { href: "/events",    label: "Event Overrides", icon: CalendarDays },
   { href: "/settings",  label: "Settings",     icon: Settings },
 ];
 

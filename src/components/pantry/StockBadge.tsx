@@ -44,7 +44,7 @@ export function StockBadge({ ingredient }: StockBadgeProps) {
   const status = getStockStatus(ingredient);
 
   // Map each status to a human-readable label displayed inside the badge
-  const labels = { ok: "In Stock", low: "Low", critical: "Critical" } as const;
+  const labels = { ok: "In Stock", low: "Low", critical: "Critical", out: "Out" } as const;
 
   // The variant drives the Badge colour (see badge.tsx for the variant-to-colour map)
   return <Badge variant={status}>{labels[status]}</Badge>;

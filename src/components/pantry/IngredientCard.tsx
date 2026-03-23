@@ -27,6 +27,7 @@ export function IngredientCard({ ingredient }: IngredientCardProps) {
     ok:       "bg-green-500",
     low:      "bg-amber-400",
     critical: "bg-red-500",
+    out:      "bg-stone-400",
   }[status];
 
   return (

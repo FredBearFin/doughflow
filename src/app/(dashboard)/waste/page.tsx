@@ -61,6 +61,11 @@ export default function WastePage() {
       utils.waste.getRecent.invalidate();
       utils.waste.getSummary.invalidate();
       utils.ingredient.getAll.invalidate(); // Stock was decremented via BOM
+      // Invalidate analytics so the charts and demand forecast reflect the new log
+      utils.analytics.wasteByProduct.invalidate();
+      utils.analytics.wasteByDayOfWeek.invalidate();
+      utils.analytics.overview.invalidate();
+      utils.analytics.demandForecast.invalidate();
       reset();
       setTimeout(() => setLastLogged(null), 3000);
     },

@@ -19,10 +19,11 @@ model Tenant {
   stripeCustomerId String?
   createdAt        DateTime  @default(now())
 
-  users       TenantUser[]
-  ingredients Ingredient[]
-  recipes     Recipe[]
-  wasteLogs   WasteLog[]
+  users          TenantUser[]
+  ingredients    Ingredient[]
+  recipes        Recipe[]
+  wasteLogs      WasteLog[]
+  forecastEvents ForecastEvent[]
 }
 
 // Links a User to a Tenant with a role (e.g. BAKER, OWNER)
@@ -71,9 +72,10 @@ model Recipe {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant      Tenant             @relation(fields: [tenantId], references: [id])
-  ingredients RecipeIngredient[]
-  wasteLogs   WasteLog[]
+  tenant         Tenant             @relation(fields: [tenantId], references: [id])
+  ingredients    RecipeIngredient[]
+  wasteLogs      WasteLog[]
+  forecastEvents ForecastEvent[]
 
   @@unique([tenantId, name])
 }
@@ -106,6 +108,25 @@ model WasteLog {
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
   recipe Recipe @relation(fields: [recipeId], references: [id])
+}
+
+// ─── Forecast Events ──────────────────────────────────────────────────────────
+// Baker-configured event/promo multipliers (e.g. Valentine's Day ×2.3).
+// Applied on top of WMA or Holt-Winters base forecast.
+// recipeId null = applies to all products.
+
+model ForecastEvent {
+  id             String   @id @default(cuid())
+  tenantId       String
+  name           String
+  date           DateTime @db.Date
+  multiplier     Float
+  recipeId       String?
+  repeatAnnually Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  recipe Recipe? @relation(fields: [recipeId], references: [id])
 }
 
 // ─── Auth (NextAuth) ──────────────────────────────────────────────────────────
