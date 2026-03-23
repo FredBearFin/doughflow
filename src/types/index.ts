@@ -50,6 +50,14 @@ export function formatUnit(qty: number, unit: string): string {
       return `${rounded} tsp`;
     case "EACH":
       return `${Math.round(qty)} ea`;
+    case "GRAM":
+      return qty >= 1000 ? `${Math.round(qty / 100) / 10} kg` : `${rounded} g`;
+    case "KILOGRAM":
+      return `${rounded} kg`;
+    case "MILLILITER":
+      return qty >= 1000 ? `${Math.round(qty / 100) / 10} L` : `${rounded} mL`;
+    case "LITER":
+      return `${rounded} L`;
     default:
       return `${rounded} ${unit.toLowerCase()}`;
   }

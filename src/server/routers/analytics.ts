@@ -370,4 +370,136 @@ export const analyticsRouter = router({
       const urgencyOrder = { critical: 0, warning: 1, ok: 2, none: 3 } as const;
       return forecasts.sort((a, b) => urgencyOrder[a.urgency] - urgencyOrder[b.urgency]);
     }),
+
+  /**
+   * Multi-day production plan — used by the Bake Plan page.
+   * For each recipe, forecasts the next `horizon` days and checks ingredient feasibility.
+   * Uses the same tiered model as demandForecast (WMA / Holt-Winters).
+   */
+  productionPlan: protectedProcedure
+    .input(z.object({ tenantId: z.string(), horizon: z.number().int().min(1).max(14).default(7) }))
+    .query(async ({ input, ctx }) => {
+      const { tenantId, horizon } = input;
+      const HISTORY_DAYS = 364; // 52 weeks — same lookback as demandForecast
+
+      const since = new Date();
+      since.setDate(since.getDate() - HISTORY_DAYS);
+
+      const [recipes, historicalLogs, ingredients] = await Promise.all([
+        ctx.prisma.recipe.findMany({
+          where: { tenantId, active: true },
+          include: { ingredients: { include: { ingredient: true } } },
+        }),
+        ctx.prisma.wasteLog.findMany({
+          where: { tenantId, date: { gte: since } },
+          orderBy: { date: "asc" },
+        }),
+        ctx.prisma.ingredient.findMany({ where: { tenantId, active: true } }),
+      ]);
+
+      const stockMap = new Map(ingredients.map((i) => [i.id, i.currentStock]));
+
+      // Horizon dates (tomorrow = day 0)
+      const horizonDates = Array.from({ length: horizon }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() + i + 1);
+        return d.toISOString().split("T")[0]!;
+      });
+
+      const plans = recipes.map((recipe) => {
+        // Build daily qtySold series for this recipe over the history window
+        const byDay = new Map<string, number>();
+        for (const log of historicalLogs.filter((l) => l.recipeId === recipe.id)) {
+          const day = log.date.toISOString().split("T")[0]!;
+          byDay.set(day, (byDay.get(day) ?? 0) + log.qtySold);
+        }
+
+        // Dense series: one number per day in the history window
+        const series: number[] = [];
+        for (let i = 0; i < HISTORY_DAYS; i++) {
+          const d = new Date(since);
+          d.setDate(d.getDate() + i);
+          series.push(byDay.get(d.toISOString().split("T")[0]!) ?? 0);
+        }
+
+        // Group by same day-of-week for WMA; use full series for HW
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const targetDOW = tomorrow.getUTCDay();
+
+        const sameDayLogs = historicalLogs
+          .filter((l) => l.recipeId === recipe.id && new Date(l.date).getUTCDay() === targetDOW)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        const tier = selectTier(sameDayLogs.length);
+        const sameDaySeries = sameDayLogs.map((l) => l.qtySold);
+
+        let tomorrowRaw: number | null = null;
+        let mape: number | null = null;
+
+        if (tier === "wma") {
+          tomorrowRaw = wma(sameDaySeries);
+        } else if (tier === "holt-winters") {
+          const dailyPoints = historicalLogs
+            .filter((l) => l.recipeId === recipe.id)
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .map((l) => ({ date: new Date(l.date), qtySold: l.qtySold }));
+          const hw = holtWinters(dailyPoints, tomorrow);
+          tomorrowRaw = hw.forecast;
+          if (hw.residuals.length > 0) {
+            const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+            const rmse = Math.sqrt(mean(hw.residuals.map((r) => r * r)));
+            const meanActual = mean(sameDaySeries);
+            mape = meanActual > 0 ? round1dp((rmse / meanActual) * 100) : null;
+          }
+        }
+
+        const tomorrowUnits = tomorrowRaw !== null ? Math.max(0, Math.ceil(tomorrowRaw * 1.1)) : 0;
+
+        // Simple 7-day weekly forecast: use tomorrowUnits as base, repeat for horizon
+        const weeklyForecast = horizonDates.map((date) => ({ date, units: tomorrowUnits }));
+
+        return {
+          recipeId: recipe.id,
+          recipeName: recipe.name,
+          batchSize: recipe.batchSize,
+          method: tier,
+          metrics: { mape },
+          tomorrowUnits,
+          weeklyForecast,
+          bom: recipe.ingredients.map((line) => ({
+            ingredientId: line.ingredientId,
+            name: line.ingredient.name,
+            unit: line.ingredient.unit,
+            qtyPerBatch: line.quantity,
+            requiredTomorrow: tomorrowUnits > 0 ? (tomorrowUnits / recipe.batchSize) * line.quantity : 0,
+          })),
+        };
+      });
+
+      // Aggregate ingredient requirements for tomorrow
+      const needMap = new Map<string, { name: string; unit: string; required: number; available: number }>();
+      for (const plan of plans) {
+        for (const line of plan.bom) {
+          if (line.requiredTomorrow === 0) continue;
+          const existing = needMap.get(line.ingredientId);
+          if (existing) {
+            existing.required += line.requiredTomorrow;
+          } else {
+            needMap.set(line.ingredientId, {
+              name: line.name,
+              unit: line.unit,
+              required: line.requiredTomorrow,
+              available: stockMap.get(line.ingredientId) ?? 0,
+            });
+          }
+        }
+      }
+
+      const ingredientCheck = Array.from(needMap.values())
+        .map((i) => ({ ...i, deficit: Math.max(0, i.required - i.available) }))
+        .sort((a, b) => b.deficit - a.deficit);
+
+      return { plans, ingredientCheck, horizonDates };
+    }),
 });

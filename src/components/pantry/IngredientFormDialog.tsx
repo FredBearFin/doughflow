@@ -3,7 +3,7 @@
  *
  * Fields:
  *   - Name (required)
- *   - Unit (required) — US bakery units: lb, oz, fl oz, cup, tbsp, tsp, each
+ *   - Unit (required) — US bakery units + metric
  *   - Current Stock (required, min 0)
  *   - Low Stock Alert At (reorderPoint, min 0)
  *   - Cost per unit (optional — enables dollar-value waste analytics)
@@ -33,19 +33,22 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 
-/** US bakery unit options */
-const UNITS = ["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH"] as const;
-type Unit = typeof UNITS[number];
+const US_UNITS  = ["LB", "OZ", "FL_OZ", "CUP", "TBSP", "TSP", "EACH"] as const;
+const MET_UNITS = ["GRAM", "KILOGRAM", "MILLILITER", "LITER"] as const;
+const ALL_UNITS = [...US_UNITS, ...MET_UNITS] as const;
+type Unit = typeof ALL_UNITS[number];
 
 const schema = z.object({
   name:           z.string().min(1, "Name required"),
-  unit:           z.enum(UNITS),
+  unit:           z.enum(ALL_UNITS),
   currentStock:   z.number().min(0),
   reorderPoint:   z.number().min(0),
   costPerUnit:    z.number().min(0).nullable().optional(),
@@ -54,26 +57,33 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-/** Display labels for each unit in the selector */
 const UNIT_LABELS: Record<Unit, string> = {
-  LB:     "Pound (lb)",
-  OZ:     "Ounce (oz)",
-  FL_OZ:  "Fluid Ounce (fl oz)",
-  CUP:    "Cup",
-  TBSP:   "Tablespoon (tbsp)",
-  TSP:    "Teaspoon (tsp)",
-  EACH:   "Each",
+  LB:         "Pound (lb)",
+  OZ:         "Ounce (oz)",
+  FL_OZ:      "Fluid Ounce (fl oz)",
+  CUP:        "Cup",
+  TBSP:       "Tablespoon (tbsp)",
+  TSP:        "Teaspoon (tsp)",
+  EACH:       "Each",
+  GRAM:       "Gram (g)",
+  KILOGRAM:   "Kilogram (kg)",
+  MILLILITER: "Milliliter (ml)",
+  LITER:      "Liter (L)",
 };
 
 /** Short abbreviation for the cost field label */
 const UNIT_ABBR: Record<Unit, string> = {
-  LB:     "lb",
-  OZ:     "oz",
-  FL_OZ:  "fl oz",
-  CUP:    "cup",
-  TBSP:   "tbsp",
-  TSP:    "tsp",
-  EACH:   "each",
+  LB:         "lb",
+  OZ:         "oz",
+  FL_OZ:      "fl oz",
+  CUP:        "cup",
+  TBSP:       "tbsp",
+  TSP:        "tsp",
+  EACH:       "each",
+  GRAM:       "g",
+  KILOGRAM:   "kg",
+  MILLILITER: "ml",
+  LITER:      "L",
 };
 
 interface IngredientFormDialogProps {
@@ -164,7 +174,7 @@ export function IngredientFormDialog({
             {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
           </div>
 
-          {/* Unit selector — US bakery units */}
+          {/* Unit selector — US bakery units + metric */}
           <div className="space-y-1.5">
             <Label>Unit *</Label>
             <Select
@@ -175,11 +185,18 @@ export function IngredientFormDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {UNITS.map((u) => (
-                  <SelectItem key={u} value={u}>
-                    {UNIT_LABELS[u]}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectLabel>US Bakery</SelectLabel>
+                  {US_UNITS.map((u) => (
+                    <SelectItem key={u} value={u}>{UNIT_LABELS[u]}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Metric</SelectLabel>
+                  {MET_UNITS.map((u) => (
+                    <SelectItem key={u} value={u}>{UNIT_LABELS[u]}</SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
@@ -250,7 +267,7 @@ export function IngredientFormDialog({
                 placeholder="e.g. 0.89"
                 className="pl-7"
                 {...register("costPerUnit", {
-                  setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
+                  setValueAs: (v) => (v === "" || v === null ? undefined : Number(v)),
                 })}
               />
             </div>

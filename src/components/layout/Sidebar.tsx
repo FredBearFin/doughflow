@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Settings,
   LogOut,
+  ChefHat,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ import { useSidebar } from "./sidebar-context";
 // Core navigation items — lean set matching the app's focused scope
 const nav = [
   { href: "/overview",  label: "Today's Kitchen", icon: LayoutDashboard },
+  { href: "/bake",      label: "Bake Plan",        icon: ChefHat },
   { href: "/pantry",    label: "Pantry",           icon: Package },
   { href: "/recipes",   label: "Products",         icon: UtensilsCrossed },
   { href: "/waste",     label: "End of Day",       icon: ClipboardList },
