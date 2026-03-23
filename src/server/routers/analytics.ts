@@ -18,6 +18,11 @@
 
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
+import {
+  selectTier, wma, holtWinters, computeMAD, computeBias,
+  isEventDay, findActiveEvent, round1dp,
+  type EventRecord,
+} from "@/lib/forecast";
 
 export const analyticsRouter = router({
   /**
@@ -189,27 +194,32 @@ export const analyticsRouter = router({
   /**
    * Demand forecast for a given date — the core feature of the app.
    *
-   * For each active product, looks at the last 12 weeks of same-day-of-week
-   * WasteLogs to calculate average units sold. Suggests baking avg × 1.1 (10% buffer).
+   * Tiered model progression:
+   *   0 same-day logs:  no prediction (suggestedQty = null)
+   *   1–7 same-day logs: Weighted Moving Average (last 3, weights 0.5/0.3/0.2)
+   *   8+ same-day logs: Holt-Winters triple exponential smoothing (s=7, multiplicative)
    *
-   * Also runs a feasibility check: given the suggested qty, do we have enough
-   * of every ingredient in stock? Returns shortfalls for any ingredient that
-   * would run out, plus the maximum feasible qty if we're short.
+   * Event/promo multipliers are applied on top of the base forecast.
+   * Event-day logs are excluded from training to prevent holiday drift.
    *
-   * Returns null for suggestedQty when fewer than 2 data points exist.
+   * Also runs a feasibility check: given suggestedQty, do we have enough
+   * ingredients in stock? Returns shortfalls and maxFeasible qty.
    */
   demandForecast: protectedProcedure
     .input(z.object({ tenantId: z.string(), date: z.string() }))
     .query(async ({ input, ctx }) => {
+      // 10% safety buffer applied to raw model output before showing to baker
+      const FORECAST_BUFFER = 1.1;
+
       const today     = new Date(input.date);
-      const dayOfWeek = today.getDay(); // 0=Sun ... 6=Sat
+      const targetDOW = today.getUTCDay(); // fix: getUTCDay not getDay (timezone safety)
 
-      // Look back 12 weeks for same-day historical data
-      const twelveWeeksAgo = new Date(today);
-      twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 84);
+      // 52-week lookback — HW needs fuller history than the old 12-week window
+      const fiftyTwoWeeksAgo = new Date(today);
+      fiftyTwoWeeksAgo.setDate(fiftyTwoWeeksAgo.getDate() - 364);
 
-      // Fetch all active products with their BOM and current ingredient stock
-      const [recipes, ingredients, historicalLogs] = await Promise.all([
+      // Parallel fetch: recipes+BOM, stock, historical logs, all tenant events
+      const [recipes, ingredients, historicalLogs, allPrismaEvents] = await Promise.all([
         ctx.prisma.recipe.findMany({
           where:   { tenantId: input.tenantId, active: true },
           include: { ingredients: { include: { ingredient: true } } },
@@ -217,42 +227,91 @@ export const analyticsRouter = router({
         ctx.prisma.ingredient.findMany({
           where: { tenantId: input.tenantId, active: true },
         }),
-        // All historical logs (we'll filter by day-of-week per product in JS)
         ctx.prisma.wasteLog.findMany({
-          where: { tenantId: input.tenantId, date: { gte: twelveWeeksAgo } },
+          where: { tenantId: input.tenantId, date: { gte: fiftyTwoWeeksAgo } },
+        }),
+        ctx.prisma.forecastEvent.findMany({
+          where: { tenantId: input.tenantId },
         }),
       ]);
 
-      // Build a stock lookup map: ingredientId → currentStock
+      // Map Prisma events → lean EventRecord (keeps forecast.ts free of Prisma)
+      const eventRecords: EventRecord[] = allPrismaEvents.map((e) => ({
+        date:           e.date,
+        multiplier:     e.multiplier,
+        recipeId:       e.recipeId,
+        repeatAnnually: e.repeatAnnually,
+        createdAt:      e.createdAt,
+        name:           e.name,
+      }));
+
+      // Stock lookup: ingredientId → currentStock
       const stockMap = new Map(ingredients.map((i) => [i.id, i.currentStock]));
 
-      // For each product, calculate demand forecast and feasibility check
+      // Helper
+      const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+
       const forecasts = recipes.map((recipe) => {
-        // Same-day-of-week historical logs for this product only
-        const sameDayLogs = historicalLogs.filter(
-          (l) => l.recipeId === recipe.id && new Date(l.date).getDay() === dayOfWeek
+        // All logs for this product in the 52-week window
+        const productLogs = historicalLogs.filter((l) => l.recipeId === recipe.id);
+
+        // Exclude event-day logs from training — prevents holiday spikes from
+        // drifting the baseline forecast upward over time (Amendment 3)
+        const cleanLogs = productLogs.filter(
+          (l) => !isEventDay(new Date(l.date), eventRecords, recipe.id)
         );
 
-        // Need ≥2 data points for a meaningful average
-        if (sameDayLogs.length < 2) {
-          return {
-            productId:    recipe.id,
-            productName:  recipe.name,
-            weeksOfData:  sameDayLogs.length,
-            suggestedQty: null,
-            avgSold:      null,
-            feasible:     null,
-            maxFeasible:  null,
-            shortfalls:   [] as { ingredientName: string; needed: number; available: number; short: number }[],
-          };
+        // Same-day-of-week logs, event days excluded, sorted oldest-first
+        const sameDayLogs = cleanLogs
+          .filter((l) => new Date(l.date).getUTCDay() === targetDOW)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        const sameDaySeries = sameDayLogs.map((l) => l.qtySold);
+        const tier          = selectTier(sameDayLogs.length);
+
+        // ── Run the appropriate model ──────────────────────────────────────
+        let rawF: number | null = null;
+        let residuals: number[] = [];
+
+        if (tier === "wma") {
+          rawF = wma(sameDaySeries);
+        } else if (tier === "holt-winters") {
+          const dailyPoints = cleanLogs
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .map((l) => ({ date: new Date(l.date), qtySold: l.qtySold }));
+          const hw  = holtWinters(dailyPoints, today);
+          rawF      = hw.forecast;
+          residuals = hw.residuals;
         }
 
-        // Average units sold on this day of week, rounded up with 10% safety buffer
-        const avgSold      = sameDayLogs.reduce((s, l) => s + l.qtySold, 0) / sameDayLogs.length;
-        const suggestedQty = Math.ceil(avgSold * 1.1);
+        // ── Apply buffer ───────────────────────────────────────────────────
+        const baseQty = rawF !== null ? Math.ceil(rawF * FORECAST_BUFFER) : null;
 
-        // Feasibility: how many batches do we need, and do we have the ingredients?
-        const batchesNeeded = suggestedQty / recipe.batchSize;
+        // ── Event multiplier (applied to baseQty, not rawF) ────────────────
+        // Semantics: baker's ×N means N× their normal safe production target
+        const activeEvent  = findActiveEvent(eventRecords, today, recipe.id);
+        const suggestedQty = baseQty !== null && activeEvent
+          ? Math.ceil(baseQty * activeEvent.multiplier)
+          : baseQty;
+
+        // ── MAD/Bias — tier-appropriate (Amendment 1) ─────────────────────
+        const rawMad  = tier === "holt-winters"
+          ? (residuals.length > 0 ? mean(residuals.map(Math.abs)) : null)
+          : computeMAD(sameDaySeries);
+        const rawBias = tier === "holt-winters"
+          ? (residuals.length > 0 ? mean(residuals) : null)
+          : computeBias(sameDaySeries);
+        const mad  = rawMad  !== null ? round1dp(rawMad)  : null;
+        const bias = rawBias !== null ? round1dp(rawBias) : null;
+
+        // ── avgSold (display only) ─────────────────────────────────────────
+        const avgSold = sameDaySeries.length > 0
+          ? round1dp(mean(sameDaySeries))
+          : null;
+
+        // ── Feasibility check (unchanged logic, uses final suggestedQty) ───
+        const qty = suggestedQty ?? 0;
+        const batchesNeeded = qty / recipe.batchSize;
         const shortfalls: { ingredientName: string; needed: number; available: number; short: number }[] = [];
 
         for (const line of recipe.ingredients) {
@@ -268,8 +327,7 @@ export const analyticsRouter = router({
           }
         }
 
-        // Max feasible qty given current stock (limited by the most constrained ingredient)
-        let maxFeasible = suggestedQty;
+        let maxFeasible = qty;
         for (const line of recipe.ingredients) {
           const available      = stockMap.get(line.ingredientId) ?? 0;
           const qtyPerUnit     = line.quantity / recipe.batchSize;
@@ -278,12 +336,20 @@ export const analyticsRouter = router({
         }
 
         return {
-          productId:    recipe.id,
-          productName:  recipe.name,
-          weeksOfData:  sameDayLogs.length,
+          productId:     recipe.id,
+          productName:   recipe.name,
+          model:         tier,
+          dataPoints:    sameDayLogs.length,
           suggestedQty,
-          avgSold:      Math.round(avgSold * 10) / 10,
-          feasible:     shortfalls.length === 0,
+          baseQty,
+          bufferApplied: FORECAST_BUFFER,
+          avgSold,
+          mad,
+          bias,
+          activeEvent:   activeEvent
+            ? { name: activeEvent.name, multiplier: activeEvent.multiplier }
+            : null,
+          feasible:      suggestedQty !== null ? shortfalls.length === 0 : null,
           maxFeasible,
           shortfalls,
         };
