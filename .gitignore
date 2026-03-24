@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Claude Code — local tooling, worktrees, and agent state (never deploy these)
+.claude/
+.agents/
+skills-lock.json
+.mcp.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
