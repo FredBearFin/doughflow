@@ -16,6 +16,8 @@ interface TierConfig {
   hasPdfExport: boolean;           // PDF reports — Baker+ only
   hasWaste: boolean;               // waste logging
   hasCogs: boolean;                // COGS per recipe
+  hasAnalytics: boolean;           // waste analytics charts + KPI cards — Baker+
+  hasSuggestedPricing: boolean;    // Quick Flip pricing calculator + margin % — Baker+
 }
 
 const TIER_CONFIG: Record<Tier, TierConfig> = {
@@ -28,16 +30,20 @@ const TIER_CONFIG: Record<Tier, TierConfig> = {
     hasPdfExport: false,
     hasWaste: false,
     hasCogs: false,
+    hasAnalytics: false,
+    hasSuggestedPricing: false,
   },
   COTTAGE: {
     recipeLimit: 10,
     ingredientLimit: 25,
     marketLimit: 1,
     hasForecast: true,
-    hasCsvExport: true,           // CSV unlocks at Cottage
+    hasCsvExport: false,
     hasPdfExport: false,
     hasWaste: true,
     hasCogs: true,
+    hasAnalytics: false,
+    hasSuggestedPricing: false,
   },
   BAKER: {
     recipeLimit: null,
@@ -48,6 +54,8 @@ const TIER_CONFIG: Record<Tier, TierConfig> = {
     hasPdfExport: true,           // PDF unlocks at Baker
     hasWaste: true,
     hasCogs: true,
+    hasAnalytics: true,
+    hasSuggestedPricing: true,
   },
   ARTISAN: {
     recipeLimit: null,
@@ -58,6 +66,8 @@ const TIER_CONFIG: Record<Tier, TierConfig> = {
     hasPdfExport: true,
     hasWaste: true,
     hasCogs: true,
+    hasAnalytics: true,
+    hasSuggestedPricing: true,
   },
 };
 

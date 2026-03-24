@@ -23,6 +23,8 @@ import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
 import { formatDate } from "@/lib/utils";
 import { CalendarDays, Trash2, Plus } from "lucide-react";
+import { TierGate } from "@/components/TierGate";
+import { useTier } from "@/hooks/useTier";
 
 const schema = z.object({
   name:           z.string().min(1, "Event name is required"),
@@ -59,6 +61,7 @@ function isSameDateScope(
 
 export default function EventsPage() {
   const tenantId = useTenantId();
+  const { hasForecast, isLoading: tierLoading } = useTier();
   const utils    = trpc.useUtils();
   const [saved, setSaved]       = useState(false);
   const [warning, setWarning]   = useState<string | null>(null);
@@ -155,6 +158,35 @@ export default function EventsPage() {
           </CardContent>
         </Card>
 
+        <TierGate
+          allowed={hasForecast}
+          isLoading={tierLoading}
+          title="Event overrides — Cottage and above"
+          description="Set date multipliers for holidays and market specials. The Bake Plan applies them automatically — so you bake double for Valentine's Day without thinking about it."
+          ctaLabel="Unlock Event Overrides — upgrade to Cottage →"
+          finePrint="Available on Cottage ($6/mo) and above"
+          preview={
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-amber-500" />
+                  Add Event
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="h-12 rounded-lg bg-stone-100" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="h-12 rounded-lg bg-stone-100" />
+                    <div className="h-12 rounded-lg bg-stone-100" />
+                  </div>
+                  <div className="h-12 rounded-lg bg-stone-100" />
+                  <div className="h-12 rounded-xl bg-amber-100" />
+                </div>
+              </CardContent>
+            </Card>
+          }
+        >
         {/* Add event form */}
         <Card>
           <CardHeader>
@@ -317,6 +349,7 @@ export default function EventsPage() {
           </CardContent>
         </Card>
 
+        </TierGate>
       </div>
     </div>
   );

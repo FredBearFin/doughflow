@@ -53,19 +53,20 @@ export default function LandingPage() {
           Stop baking blind
         </div>
         <h1 className="text-5xl font-bold text-stone-900 leading-tight mb-6">
-          Know what to bake.<br />
-          <span className="text-amber-500">Before you fire the oven.</span>
+          Know what to bake<br />
+          <span className="text-amber-500">before Saturday&apos;s market.</span>
         </h1>
         <p className="text-xl text-stone-500 max-w-2xl mx-auto mb-8">
-          DoughFlow learns your bakery&apos;s demand patterns and tells you exactly what to bake each
-          morning — so you sell out without throwing away unsold product at close.
+          DoughFlow learns your demand patterns and tells you exactly what to bake each week —
+          built for home bakers, cottage food sellers, and farmers market vendors who want to
+          sell out without throwing away unsold product at the end of the day.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/login"
             className="inline-flex items-center justify-center h-14 rounded-xl bg-amber-500 px-8 text-base font-semibold text-white hover:bg-amber-600 transition-colors shadow-lg shadow-amber-200"
           >
-            Start free trial
+            Get started free
           </Link>
           <Link
             href="/pricing"
@@ -74,7 +75,7 @@ export default function LandingPage() {
             See pricing
           </Link>
         </div>
-        <p className="text-sm text-stone-400 mt-4">No credit card · 14-day free trial</p>
+        <p className="text-sm text-stone-400 mt-4">Free forever · No credit card needed</p>
       </section>
 
       {/* Feature grid */}
@@ -89,7 +90,7 @@ export default function LandingPage() {
             {
               icon: "✅",
               title: "Ingredient Feasibility",
-              desc: "Before you bake 50 croissants, know if you have enough butter. DoughFlow checks your pantry against the forecast.",
+              desc: "Before you bake 30 sourdough loaves for Saturday, know if you have enough flour. DoughFlow checks your pantry against the forecast.",
             },
             {
               icon: "📦",
@@ -131,7 +132,7 @@ export default function LandingPage() {
             Less waste. Every single day.
           </h2>
           <p className="text-amber-100 mb-8">
-            Most bakeries throw away 10–15% of what they bake. DoughFlow pays for itself
+            Most home bakers throw away 10–15% of what they bake. DoughFlow pays for itself
             in the first week of waste reduction.
           </p>
           <Link
@@ -145,7 +146,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="text-center py-8 text-sm text-stone-400">
-        © 2026 DoughFlow · Built for bakeries
+        © 2026 DoughFlow · Built for home bakers, cottage food sellers &amp; market vendors
       </footer>
     </div>
   );

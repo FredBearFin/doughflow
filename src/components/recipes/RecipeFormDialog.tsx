@@ -18,7 +18,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Lock } from "lucide-react";
+import Link from "next/link";
+import { useTier } from "@/hooks/useTier";
 
 const schema = z.object({
   name:        z.string().min(1, "Name required"),
@@ -54,6 +56,7 @@ export function RecipeFormDialog({
 }: RecipeFormDialogProps) {
   const utils  = trpc.useUtils();
   const isEdit = !!recipe;
+  const { hasSuggestedPricing, isLoading: tierLoading } = useTier();
 
   // Local state for target margin (not saved to DB — just for the pricing calculator)
   const [targetMargin, setTargetMargin] = useState(60);
@@ -236,44 +239,66 @@ export function RecipeFormDialog({
               </div>
             </div>
 
-            {/* Target margin + suggested price — only show when BOM cost is available */}
-            {bomCostPerUnit != null && (
-              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <Label htmlFor="targetMargin" className="text-stone-600 shrink-0">
-                    Target Margin
-                  </Label>
-                  <div className="relative w-24">
-                    <Input
-                      id="targetMargin"
-                      type="number"
-                      min="1"
-                      max="99"
-                      value={targetMargin}
-                      onChange={(e) => setTargetMargin(Number(e.target.value))}
-                      className="pr-6 text-right"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">%</span>
+            {/* Target margin + suggested price — Baker+ only */}
+            {!tierLoading && (
+              hasSuggestedPricing ? (
+                /* Full Quick Flip calculator — only shown when BOM cost is available */
+                bomCostPerUnit != null && (
+                  <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <Label htmlFor="targetMargin" className="text-stone-600 shrink-0">
+                        Target Margin
+                      </Label>
+                      <div className="relative w-24">
+                        <Input
+                          id="targetMargin"
+                          type="number"
+                          min="1"
+                          max="99"
+                          value={targetMargin}
+                          onChange={(e) => setTargetMargin(Number(e.target.value))}
+                          className="pr-6 text-right"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">%</span>
+                      </div>
+                    </div>
+
+                    {suggestedPrice !== null && (
+                      <div>
+                        <p className="text-xs text-stone-500 mb-1">Suggested sell price to hit {targetMargin}% margin</p>
+                        <p className="text-xl font-bold text-amber-600">Sell for {formatCurrency(suggestedPrice)}</p>
+                      </div>
+                    )}
+
+                    {actualMargin !== null && currentRetailPrice && currentRetailPrice > 0 && (
+                      <div className="flex items-center justify-between text-sm border-t border-amber-200 pt-3">
+                        <span className="text-stone-500">Your margin at {formatCurrency(currentRetailPrice)}</span>
+                        <span className={`font-bold ${actualMargin >= targetMargin ? "text-green-600" : "text-red-600"}`}>
+                          {actualMargin.toFixed(1)}%
+                          {actualMargin < targetMargin && ` (${(targetMargin - actualMargin).toFixed(1)}% below target)`}
+                        </span>
+                      </div>
+                    )}
                   </div>
+                )
+              ) : (
+                /* Locked teaser — shown to Free + Cottage users */
+                <div className="rounded-xl bg-stone-50 border border-stone-200 p-3.5 flex items-center gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-100">
+                    <Lock className="h-3.5 w-3.5 text-stone-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-stone-600">Quick Flip Pricing — Baker+</p>
+                    <p className="text-xs text-stone-400 leading-snug">Auto-calculates your sell price at any target margin.</p>
+                  </div>
+                  <Link
+                    href="/pricing"
+                    className="shrink-0 text-xs font-semibold text-amber-600 hover:underline whitespace-nowrap"
+                  >
+                    Upgrade →
+                  </Link>
                 </div>
-
-                {suggestedPrice !== null && (
-                  <div>
-                    <p className="text-xs text-stone-500 mb-1">Suggested sell price to hit {targetMargin}% margin</p>
-                    <p className="text-xl font-bold text-amber-600">Sell for {formatCurrency(suggestedPrice)}</p>
-                  </div>
-                )}
-
-                {actualMargin !== null && currentRetailPrice && currentRetailPrice > 0 && (
-                  <div className="flex items-center justify-between text-sm border-t border-amber-200 pt-3">
-                    <span className="text-stone-500">Your margin at {formatCurrency(currentRetailPrice)}</span>
-                    <span className={`font-bold ${actualMargin >= targetMargin ? "text-green-600" : "text-red-600"}`}>
-                      {actualMargin.toFixed(1)}%
-                      {actualMargin < targetMargin && ` (${(targetMargin - actualMargin).toFixed(1)}% below target)`}
-                    </span>
-                  </div>
-                )}
-              </div>
+              )
             )}
           </div>
 

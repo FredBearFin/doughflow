@@ -27,6 +27,15 @@ import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
 import { Plus, Search } from "lucide-react";
 import { IngredientFormDialog } from "@/components/pantry/IngredientFormDialog";
+import { useTier } from "@/hooks/useTier";
+import { UpgradeModal } from "@/components/UpgradeModal";
+
+const TIER_LABEL: Record<string, string> = {
+  FREE:    "Free",
+  COTTAGE: "Cottage",
+  BAKER:   "Baker",
+  ARTISAN: "Artisan",
+};
 
 /**
  * PantryPage is the default export for the /pantry route.
@@ -35,12 +44,16 @@ import { IngredientFormDialog } from "@/components/pantry/IngredientFormDialog";
  */
 export default function PantryPage() {
   const tenantId = useTenantId();
+  const tier = useTier();
 
   /** Controlled search input value — filters the ingredient list by name */
   const [search, setSearch] = useState("");
 
   /** Whether the "Add Ingredient" dialog is open */
   const [showCreate, setShowCreate] = useState(false);
+
+  /** Whether the upgrade modal is shown (ingredient limit hit) */
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   // Fetch all active ingredients for this tenant, sorted alphabetically
   const { data: ingredients, isLoading } = trpc.ingredient.getAll.useQuery(
@@ -57,6 +70,21 @@ export default function PantryPage() {
     i.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  /** Total ingredient count (before search filter, so the limit check is accurate) */
+  const ingredientCount = ingredients?.length ?? 0;
+
+  /** True once we know for sure the user is at or over their ingredient limit */
+  const atIngredientLimit = !tier.isLoading && !tier.canAddIngredient(ingredientCount);
+
+  /** Open the create dialog, or fire the upgrade modal if the limit is hit */
+  function handleAddIngredient() {
+    if (atIngredientLimit) {
+      setShowUpgrade(true);
+    } else {
+      setShowCreate(true);
+    }
+  }
+
   /**
    * Critical count: items at 50% or less of their reorder point.
    * Items with reorderPoint === 0 are excluded (no threshold set yet).
@@ -72,11 +100,36 @@ export default function PantryPage() {
   return (
     <div>
       <TopBar title="Pantry">
-        <Button onClick={() => setShowCreate(true)}>
+        <Button onClick={handleAddIngredient}>
           <Plus className="h-4 w-4" />
           Add Ingredient
         </Button>
       </TopBar>
+
+      {/* Soft limit banner — shown when approaching or at the ingredient cap */}
+      {!tier.isLoading && tier.ingredientLimit !== null && (
+        <div
+          className={`mx-6 mt-4 rounded-lg px-4 py-2.5 text-sm flex items-center justify-between ${
+            atIngredientLimit
+              ? "bg-amber-50 border border-amber-200 text-amber-800"
+              : ingredientCount >= tier.ingredientLimit - 2
+              ? "bg-stone-50 border border-stone-200 text-stone-500"
+              : "hidden"
+          }`}
+        >
+          <span>
+            {atIngredientLimit
+              ? `You've used all ${tier.ingredientLimit} ingredient slots on the ${TIER_LABEL[tier.tier] ?? tier.tier} plan.`
+              : `${tier.ingredientLimit - ingredientCount} ingredient slot${tier.ingredientLimit - ingredientCount === 1 ? "" : "s"} remaining on the ${TIER_LABEL[tier.tier] ?? tier.tier} plan.`}
+          </span>
+          <button
+            onClick={() => setShowUpgrade(true)}
+            className="ml-4 text-amber-600 font-medium hover:underline whitespace-nowrap"
+          >
+            Upgrade →
+          </button>
+        </div>
+      )}
 
       <div className="p-6 space-y-5">
         {/*
@@ -126,7 +179,7 @@ export default function PantryPage() {
           // Empty state — shown when there are no ingredients yet or no search match
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <p className="text-stone-400 text-lg mb-4">No ingredients yet</p>
-            <Button onClick={() => setShowCreate(true)}>
+            <Button onClick={handleAddIngredient}>
               <Plus className="h-4 w-4" />
               Add your first ingredient
             </Button>
@@ -149,6 +202,24 @@ export default function PantryPage() {
           onOpenChange={setShowCreate}
         />
       )}
+
+      {/* Upgrade modal — fires when ingredient limit is hit */}
+      <UpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        title="Ingredient limit reached"
+        limitLine={`${TIER_LABEL[tier.tier] ?? tier.tier} accounts can track up to ${tier.ingredientLimit} ingredients.`}
+        unlockLine={
+          tier.tier === "FREE"
+            ? "Upgrade to Cottage for up to 25 ingredients, Bake Plan forecasts, waste logging, and more — just $6/mo."
+            : "Upgrade to Baker for unlimited ingredients, analytics, suggested pricing, and more — just $14/mo."
+        }
+        ctaLabel={
+          tier.tier === "FREE"
+            ? "Upgrade to Cottage — $6/mo"
+            : "Upgrade to Baker — $14/mo"
+        }
+      />
     </div>
   );
 }

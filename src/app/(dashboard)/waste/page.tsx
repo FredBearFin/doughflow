@@ -17,6 +17,8 @@ import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { ClipboardList, CheckCircle2, Trash2 } from "lucide-react";
+import { TierGate } from "@/components/TierGate";
+import { useTier } from "@/hooks/useTier";
 
 // Form validation schema
 const schema = z.object({
@@ -33,6 +35,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function WastePage() {
   const tenantId = useTenantId();
+  const { hasWaste, isLoading: tierLoading } = useTier();
   const [lastLogged, setLastLogged] = useState<string | null>(null);
   const utils = trpc.useUtils();
 
@@ -121,6 +124,35 @@ export default function WastePage() {
       <TopBar title="End of Day Log" />
 
       <div className="p-6 space-y-6">
+        <TierGate
+          allowed={hasWaste}
+          isLoading={tierLoading}
+          title="Log your bakes and track waste"
+          description="Log what you baked and sold each day — DoughFlow learns your patterns and helps you bake the right amount for Saturday's market."
+          ctaLabel="Log your bakes and track waste — unlock with Cottage →"
+          finePrint="Available on Cottage ($6/mo) and above · Free plan includes basic recipe tracking"
+          preview={
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-amber-500" />
+                  Log Today&apos;s Bake
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="h-14 rounded-lg bg-stone-100" />
+                  <div className="h-14 rounded-lg bg-stone-100" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="h-14 rounded-lg bg-stone-100" />
+                    <div className="h-14 rounded-lg bg-stone-100" />
+                  </div>
+                  <div className="h-14 rounded-xl bg-amber-100" />
+                </div>
+              </CardContent>
+            </Card>
+          }
+        >
         {/* Log form */}
         <Card>
           <CardHeader>
@@ -308,6 +340,7 @@ export default function WastePage() {
             </CardContent>
           </Card>
         </div>
+        </TierGate>
       </div>
     </div>
   );

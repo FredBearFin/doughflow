@@ -15,10 +15,12 @@ import {
   LogOut,
   ChefHat,
   Database,
+  Sparkles,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./sidebar-context";
+import { useTier } from "@/hooks/useTier";
 
 // Core navigation items — lean set matching the app's focused scope
 const nav = [
@@ -32,9 +34,18 @@ const nav = [
   { href: "/settings",  label: "Settings",         icon: Settings },
 ];
 
+const TIER_LABEL: Record<string, string> = {
+  FREE:    "Free",
+  COTTAGE: "Cottage",
+  BAKER:   "Baker",
+  ARTISAN: "Artisan",
+};
+
 export function Sidebar() {
   const pathname = usePathname();
   const { open, setOpen } = useSidebar();
+  const { tier, isLoading, hasWaste } = useTier();
+  const isTopTier = tier === "ARTISAN";
 
   return (
     <>
@@ -65,6 +76,9 @@ export function Sidebar() {
       {/* Nav links */}
       <nav className="flex-1 overflow-y-auto py-4 px-3">
         {nav.map(({ href, label, icon: Icon }) => {
+          // Hide tier-gated nav items for users who don't have access yet
+          if (href === "/waste" && !isLoading && !hasWaste) return null;
+
           // Prefix matching so child routes keep the parent item highlighted
           const active = pathname.startsWith(href);
           return (
@@ -86,8 +100,34 @@ export function Sidebar() {
         })}
       </nav>
 
+      {/* Plan badge + upgrade CTA */}
+      {!isLoading && (
+        <div className="px-3 pt-3 pb-1 border-t border-stone-100">
+          {isTopTier ? (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 text-amber-700 text-xs font-semibold">
+              <Sparkles className="h-3.5 w-3.5 shrink-0" />
+              Artisan Plan
+            </div>
+          ) : (
+            <Link
+              href="/pricing"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 bg-amber-50 hover:bg-amber-100 transition-colors group"
+            >
+              <div>
+                <p className="text-xs font-semibold text-amber-700">
+                  {TIER_LABEL[tier] ?? tier} Plan
+                </p>
+                <p className="text-[10px] text-amber-600 mt-0.5">Upgrade →</p>
+              </div>
+              <Sparkles className="h-4 w-4 text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
+            </Link>
+          )}
+        </div>
+      )}
+
       {/* Sign out */}
-      <div className="p-3 border-t border-stone-100">
+      <div className="p-3">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-50 hover:text-stone-700 transition-colors"

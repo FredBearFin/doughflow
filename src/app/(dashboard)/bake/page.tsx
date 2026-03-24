@@ -246,7 +246,7 @@ export default function BakePlanPage() {
               <div key={i} className="h-40 animate-pulse rounded-xl bg-stone-200" />
             ))}
           </div>
-        ) : data?.plans.length === 0 ? (
+        ) : !data?.plans?.length ? (
           <Card>
             <CardContent className="py-12 text-center text-stone-400">
               No recipes yet. Add recipes and log sales to generate a bake plan.

@@ -11,7 +11,7 @@
 //   none     — no data yet, muted, prompt to log end of day
 
 import Link from "next/link";
-import { CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Clock, ChefHat } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
 
@@ -37,11 +37,43 @@ export function BakingCommandList() {
 
   if (!forecasts || forecasts.length === 0) {
     return (
-      <div className="rounded-xl border border-stone-200 bg-white p-8 text-center">
-        <p className="text-stone-400 mb-3">No products yet — add your first product to get started</p>
-        <Link href="/recipes" className="text-sm text-amber-600 font-medium hover:underline">
-          Add a Product →
-        </Link>
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="h-9 w-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+            <ChefHat className="h-5 w-5 text-amber-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-stone-800 text-sm">Your kitchen is ready</p>
+            <p className="text-xs text-stone-500 mt-0.5">Follow these steps to get your baking commands</p>
+          </div>
+        </div>
+        <ol className="space-y-3">
+          <li className="flex items-start gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white text-xs font-bold mt-0.5">1</span>
+            <div>
+              <Link href="/recipes" className="text-sm font-medium text-amber-700 hover:text-amber-800 hover:underline">
+                Add your products →
+              </Link>
+              <p className="text-xs text-stone-400 mt-0.5">Sourdough, cinnamon rolls, croissants…</p>
+            </div>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white text-xs font-bold mt-0.5">2</span>
+            <div>
+              <Link href="/waste" className="text-sm font-medium text-amber-700 hover:text-amber-800 hover:underline">
+                Log your first end of day →
+              </Link>
+              <p className="text-xs text-stone-400 mt-0.5">How many did you bake and sell?</p>
+            </div>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-stone-200 text-stone-500 text-xs font-bold mt-0.5">3</span>
+            <div>
+              <p className="text-sm font-medium text-stone-400">Come back tomorrow for predictions</p>
+              <p className="text-xs text-stone-400 mt-0.5">DoughFlow learns from your history to tell you what to bake</p>
+            </div>
+          </li>
+        </ol>
       </div>
     );
   }

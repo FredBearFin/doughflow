@@ -146,7 +146,8 @@ export default function RecipesPage() {
                           <span className="text-stone-300 mx-1">·</span>
                           <span className="text-stone-400">Sell </span>
                           <span className="font-medium text-stone-700">{formatCurrency(recipe.retailPrice)}</span>
-                          {margin !== null && (
+                          {/* Margin % is a Baker+ feature — only shown when hasSuggestedPricing */}
+                          {margin !== null && tier.hasSuggestedPricing && (
                             <>
                               <span className="text-stone-300 mx-1">·</span>
                               <span className={`font-semibold ${margin >= 50 ? "text-green-600" : margin >= 30 ? "text-amber-600" : "text-red-600"}`}>

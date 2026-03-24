@@ -18,6 +18,8 @@ import { formatCurrency } from "@/lib/utils";
 import { BakingCommandList } from "@/components/demand/BakingCommandList";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { TierGate } from "@/components/TierGate";
+import { useTier } from "@/hooks/useTier";
 import {
   BarChart,
   Bar,
@@ -30,6 +32,7 @@ import {
 
 export default function OverviewPage() {
   const tenantId = useTenantId();
+  const { hasAnalytics, isLoading: tierLoading } = useTier();
 
   const { data: ingredients } = trpc.ingredient.getAll.useQuery(
     { tenantId: tenantId! },
@@ -100,7 +103,30 @@ export default function OverviewPage() {
           </Card>
         )}
 
-        {/* ── Waste Trends divider ──────────────────────────────────── */}
+        {/* ── Waste Trends (Baker+) ─────────────────────────────────── */}
+        <TierGate
+          allowed={hasAnalytics}
+          isLoading={tierLoading}
+          title="Waste analytics & trends"
+          description="See which products waste the most, which days are worst, and the dollar cost of what you throw away. Upgrade to Baker to unlock charts and KPI cards."
+          ctaLabel="Unlock waste analytics — upgrade to Baker →"
+          finePrint="Available on Baker ($14/mo) and above"
+          preview={
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 pt-2">
+                <div className="flex-1 border-t border-stone-200" />
+                <span className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Waste Trends</span>
+                <div className="flex-1 border-t border-stone-200" />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {["Units Wasted (30d)", "Units Baked (30d)", "Waste Rate (30d)", "Waste Cost (30d)"].map((label) => (
+                  <Card key={label}><CardContent className="p-5"><p className="text-sm text-stone-300 mb-1">{label}</p><div className="h-8 w-16 rounded bg-stone-100" /></CardContent></Card>
+                ))}
+              </div>
+              <Card><CardContent className="p-5"><div className="h-48 rounded bg-stone-50" /></CardContent></Card>
+            </div>
+          }
+        >
         <div className="flex items-center gap-3 pt-2">
           <div className="flex-1 border-t border-stone-200" />
           <span className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Waste Trends</span>
@@ -210,6 +236,7 @@ export default function OverviewPage() {
             )}
           </CardContent>
         </Card>
+        </TierGate>
 
       </div>
     </div>
