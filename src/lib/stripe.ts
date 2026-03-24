@@ -48,7 +48,10 @@ export function getStripe(): Stripe {
 export function getPriceIds() {
   return {
     COTTAGE_MONTHLY: process.env.STRIPE_PRICE_COTTAGE_MONTHLY ?? "",
+    COTTAGE_ANNUAL:  process.env.STRIPE_PRICE_COTTAGE_ANNUAL  ?? "",
     BAKER_MONTHLY:   process.env.STRIPE_PRICE_BAKER_MONTHLY   ?? "",
+    BAKER_ANNUAL:    process.env.STRIPE_PRICE_BAKER_ANNUAL    ?? "",
+    // Artisan — kept in code but not shown on pricing page yet
     ARTISAN_MONTHLY: process.env.STRIPE_PRICE_ARTISAN_MONTHLY ?? "",
     ARTISAN_ANNUAL:  process.env.STRIPE_PRICE_ARTISAN_ANNUAL  ?? "",
   };
@@ -58,9 +61,11 @@ export function getPriceIds() {
 export function tierForPriceId(priceId: string): "COTTAGE" | "BAKER" | "ARTISAN" | null {
   const ids = getPriceIds();
   switch (priceId) {
-    case ids.COTTAGE_MONTHLY: return "COTTAGE";
-    case ids.BAKER_MONTHLY:   return "BAKER";
-    case ids.ARTISAN_MONTHLY: return "ARTISAN";
+    case ids.COTTAGE_MONTHLY:
+    case ids.COTTAGE_ANNUAL:  return "COTTAGE";
+    case ids.BAKER_MONTHLY:
+    case ids.BAKER_ANNUAL:    return "BAKER";
+    case ids.ARTISAN_MONTHLY:
     case ids.ARTISAN_ANNUAL:  return "ARTISAN";
     default:                   return null;
   }

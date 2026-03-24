@@ -11,84 +11,72 @@ type Billing = "monthly" | "annual";
 type Feature = { text: string; included: boolean; highlight?: boolean };
 
 interface Tier {
-  name: string;
-  price: { monthly: string; annual?: string };
-  annualNote?: string;
-  description: string;
-  cta: string;
-  popular?: boolean;
-  muted?: boolean;
-  features: Feature[];
+  name:          string;
+  price:         { monthly: string; annual?: string };
+  annualMonthly?: string;   // "equiv per month" shown when annual toggle is on
+  annualNote?:   string;    // e.g. "1 month free"
+  description:   string;
+  cta:           string;
+  popular?:      boolean;
+  muted?:        boolean;
+  features:      Feature[];
 }
 
+// Artisan is intentionally absent — kept in code / Stripe but not shown yet.
 const TIERS: Tier[] = [
   {
-    name: "Free",
-    price: { monthly: "$0" },
+    name:        "Free",
+    price:       { monthly: "$0" },
     description: "Get a feel for the app. No card needed, no expiry.",
-    cta: "Get started free",
-    muted: true,
+    cta:         "Get started free",
+    muted:       true,
     features: [
-      { text: "3 recipes", included: true },
-      { text: "3 pantry ingredients", included: true },
-      { text: "Manual stock adjust", included: true },
-      { text: "Batch cost calculator (screen only)", included: true },
-      { text: "Bake Plan / demand forecast", included: false },
-      { text: "Waste tracking", included: false },
-      { text: "COGS per recipe", included: false },
-      { text: "Exports of any kind", included: false },
+      { text: "3 recipes",                                included: true  },
+      { text: "3 pantry ingredients",                     included: true  },
+      { text: "Manual stock adjust",                      included: true  },
+      { text: "Batch cost calculator (screen only)",      included: true  },
+      { text: "Bake Plan / demand forecast",              included: false },
+      { text: "Waste tracking",                           included: false },
+      { text: "COGS per recipe",                          included: false },
+      { text: "Exports of any kind",                      included: false },
     ],
   },
   {
-    name: "Cottage",
-    price: { monthly: "$6" },
-    description: "For sellers who want to bake smarter before market day.",
-    cta: "Start with Cottage",
+    name:          "Cottage",
+    price:         { monthly: "$6", annual: "$66" },
+    annualMonthly: "$5.50",
+    annualNote:    "1 month free",
+    description:   "For sellers who want to bake smarter before market day.",
+    cta:           "Start with Cottage",
     features: [
-      { text: "10 recipes", included: true },
-      { text: "25 pantry ingredients", included: true },
-      { text: "Bake Plan — know what to bake before Saturday", included: true, highlight: true },
-      { text: "Basic waste logging", included: true },
-      { text: "COGS per recipe", included: true },
-      { text: "1 sales channel / market", included: true },
-      { text: "CSV import / export", included: false },
-      { text: "Analytics & charts", included: false },
-      { text: "PDF exports", included: false },
+      { text: "10 recipes",                                        included: true,  },
+      { text: "25 pantry ingredients",                             included: true,  },
+      { text: "Bake Plan — know what to bake before Saturday",     included: true, highlight: true },
+      { text: "Waste logging",                                     included: true,  },
+      { text: "COGS per recipe",                                   included: true,  },
+      { text: "1 sales channel / market",                          included: true,  },
+      { text: "CSV import / export",                               included: false },
+      { text: "Analytics & charts",                                included: false },
+      { text: "Suggested retail pricing",                          included: false },
     ],
   },
   {
-    name: "Baker",
-    price: { monthly: "$14" },
-    description: "For growing sellers who need unlimited scale and real analytics.",
-    cta: "Start with Baker",
-    popular: true,
+    name:          "Baker",
+    price:         { monthly: "$14", annual: "$140" },
+    annualMonthly: "$11.67",
+    annualNote:    "2 months free",
+    description:   "For growing sellers who need unlimited scale and real analytics.",
+    cta:           "Start with Baker",
+    popular:       true,
     features: [
-      { text: "Unlimited recipes & ingredients", included: true },
-      { text: "Everything in Cottage", included: true },
-      { text: "Up to 3 sales channels / markets", included: true },
-      { text: "CSV import & export", included: true },
-      { text: "Suggested retail pricing", included: true },
-      { text: "Analytics & charts", included: true },
-      { text: "PDF exports (no watermark)", included: true },
-      { text: "Orders & customer tracking", included: true },
-      { text: "Low-stock alerts", included: true },
-    ],
-  },
-  {
-    name: "Artisan",
-    price: { monthly: "$29", annual: "$290" },
-    annualNote: "2 months free",
-    description: "For serious sellers running a real operation.",
-    cta: "Start with Artisan",
-    features: [
-      { text: "Everything in Baker", included: true },
-      { text: "Unlimited sales channels / markets", included: true },
-      { text: "Supplier price tracker", included: true },
-      { text: "2 staff / helper accounts", included: true },
-      { text: "White-labeled order forms", included: true },
-      { text: "Advanced forecast (per-market breakdown)", included: true },
-      { text: "Priority support", included: true },
-      { text: "Early access features", included: true },
+      { text: "Unlimited recipes & ingredients",       included: true  },
+      { text: "Everything in Cottage",                 included: true  },
+      { text: "Up to 3 sales channels / markets",      included: true  },
+      { text: "CSV import & export",                   included: true  },
+      { text: "Suggested retail pricing",              included: true  },
+      { text: "Analytics & charts",                    included: true  },
+      { text: "PDF exports (no watermark)",            included: true  },
+      { text: "Low-stock alerts",                      included: true  },
     ],
   },
 ];
@@ -109,20 +97,20 @@ const FAQ = [
     a: "Your weekly production forecast. DoughFlow analyses your sales history and tells you exactly what to bake before market day — by recipe, by quantity. It's the core reason people upgrade from Free to Cottage.",
   },
   {
+    q: "Do you offer annual billing?",
+    a: "Yes — Cottage is $66/year (saves you one month vs monthly) and Baker is $140/year (saves you two months). You can switch between monthly and annual at any time.",
+  },
+  {
     q: "Can I downgrade after upgrading?",
     a: "Yes. Your data stays intact — you'll just lose access to paid features above your plan's limits. Nothing is deleted.",
   },
   {
-    q: "Does Artisan offer annual billing?",
-    a: "Yes — $290/year saves you two months compared to monthly billing ($348/year). You can switch at any time.",
-  },
-  {
     q: "What counts as a sales channel?",
-    a: "Each place you sell counts as one channel — a farmers market, an online shop, a café account, a farm stand. Cottage covers one; Baker covers three; Artisan is unlimited.",
+    a: "Each place you sell counts as one channel — a farmers market, an online shop, a café account, a farm stand. Cottage covers one; Baker covers three.",
   },
   {
     q: "Do you charge per user?",
-    a: "No. Free, Cottage, and Baker are all single-user. Artisan includes 2 staff / helper accounts.",
+    a: "No. All plans are single-user accounts.",
   },
 ];
 
@@ -155,7 +143,7 @@ export default function PricingPage() {
       </nav>
 
       {/* Header */}
-      <section className="max-w-4xl mx-auto px-8 pt-16 pb-10 text-center">
+      <section className="max-w-3xl mx-auto px-8 pt-16 pb-10 text-center">
         <h1 className="text-4xl font-bold text-stone-900 mb-3">
           Simple, honest pricing.
         </h1>
@@ -188,21 +176,21 @@ export default function PricingPage() {
           >
             Annual
             <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">
-              Save 17%
+              Save up to 17%
             </span>
           </button>
         </div>
       </section>
 
-      {/* Pricing cards */}
-      <section className="max-w-6xl mx-auto px-8 pb-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Pricing cards — 3 tiers */}
+      <section className="max-w-5xl mx-auto px-8 pb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {TIERS.map((tier) => {
-            const isAnnualArtisan = billing === "annual" && tier.annualNote;
-            const price = isAnnualArtisan ? tier.price.annual! : tier.price.monthly;
+            const showAnnual = billing === "annual" && !!tier.price.annual;
+            const price  = showAnnual ? tier.price.annual! : tier.price.monthly;
             const period = tier.price.monthly === "$0"
               ? "forever"
-              : isAnnualArtisan
+              : showAnnual
               ? "/ year"
               : "/ mo";
 
@@ -229,13 +217,24 @@ export default function PricingPage() {
                   <p className={`text-sm font-semibold mb-1 ${tier.muted ? "text-stone-400" : "text-stone-600"}`}>
                     {tier.name}
                   </p>
-                  <div className="flex items-end gap-1 mb-1">
+
+                  <div className="flex items-end gap-1 mb-0.5">
                     <span className="text-4xl font-bold text-stone-900">{price}</span>
                     <span className="text-stone-400 text-sm mb-1">{period}</span>
                   </div>
-                  {isAnnualArtisan && tier.annualNote && (
-                    <p className="text-xs text-amber-600 font-medium">{tier.annualNote}</p>
+
+                  {/* Annual savings callout */}
+                  {showAnnual && tier.annualNote && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                        {tier.annualNote}
+                      </span>
+                      {tier.annualMonthly && (
+                        <span className="text-xs text-stone-400">= {tier.annualMonthly}/mo</span>
+                      )}
+                    </div>
                   )}
+
                   <p className={`text-sm mt-2 ${tier.muted ? "text-stone-400" : "text-stone-500"}`}>
                     {tier.description}
                   </p>
