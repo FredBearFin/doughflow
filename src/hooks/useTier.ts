@@ -63,6 +63,8 @@ const TIER_CONFIG: Record<Tier, TierConfig> = {
 
 export interface TierHelpers extends TierConfig {
   tier:             Tier;
+  isTrialing:       boolean;   // true while the 6-week free trial is active
+  trialDaysLeft:    number;    // 0 when not trialing
   isLoading:        boolean;
   canAddRecipe:     (currentCount: number) => boolean;
   canAddIngredient: (currentCount: number) => boolean;
@@ -73,11 +75,15 @@ export function useTier(): TierHelpers {
     staleTime: 5 * 60 * 1000, // 5 min — tier doesn't change mid-session
   });
 
-  const tier = toTier((data?.tier ?? "FREE") as DbTier);
-  const config = TIER_CONFIG[tier];
+  const tier          = toTier((data?.tier ?? "FREE") as DbTier);
+  const isTrialing    = data?.isTrialing   ?? false;
+  const trialDaysLeft = data?.trialDaysLeft ?? 0;
+  const config        = TIER_CONFIG[tier];
 
   return {
     tier,
+    isTrialing,
+    trialDaysLeft,
     isLoading,
     ...config,
     canAddRecipe:     (n) => config.recipeLimit     === null || n < config.recipeLimit,

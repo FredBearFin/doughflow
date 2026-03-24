@@ -141,6 +141,7 @@ model Subscription {
   stripeCustomerId     String?
   stripeSubscriptionId String?
   currentPeriodEnd     DateTime?
+  trialEndsAt          DateTime?          // Set on signup; null once they've paid
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 

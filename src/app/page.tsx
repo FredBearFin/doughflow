@@ -66,7 +66,7 @@ export default function LandingPage() {
             href="/login"
             className="inline-flex items-center justify-center h-14 rounded-xl bg-amber-500 px-8 text-base font-semibold text-white hover:bg-amber-600 transition-colors shadow-lg shadow-amber-200"
           >
-            Get started free
+            Start your 6-week free trial
           </Link>
           <Link
             href="/pricing"
@@ -75,7 +75,7 @@ export default function LandingPage() {
             See pricing
           </Link>
         </div>
-        <p className="text-sm text-stone-400 mt-4">Free forever · No credit card needed</p>
+        <p className="text-sm text-stone-400 mt-4">6 weeks free · No credit card · Cancel anytime</p>
       </section>
 
       {/* Feature grid */}
@@ -139,7 +139,7 @@ export default function LandingPage() {
             href="/login"
             className="inline-flex items-center justify-center h-14 rounded-xl bg-white px-8 text-base font-semibold text-amber-600 hover:bg-amber-50 transition-colors"
           >
-            Get started free
+            Start your 6-week free trial
           </Link>
         </div>
       </section>

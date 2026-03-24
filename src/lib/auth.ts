@@ -52,6 +52,9 @@ import Resend from "next-auth/providers/resend";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 
+/** 6-week trial length in milliseconds */
+const TRIAL_MS = 42 * 24 * 60 * 60 * 1000;
+
 /**
  * Dev-only credentials provider.
  * Defined as a conditional array so it can be spread into the providers list.
@@ -120,6 +123,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/login",              // Our custom login page
     verifyRequest: "/login?verify=1", // Shown after magic link is sent
+  },
+
+  events: {
+    /**
+     * Fires exactly once when a brand-new User row is created by the adapter
+     * (first OAuth sign-in or first magic-link sign-in).
+     * We use it to bootstrap a 42-day trial subscription so the user gets
+     * full Pro access immediately — no credit card, no friction.
+     */
+    async createUser({ user }) {
+      if (!user.id) return;
+      await prisma.subscription.upsert({
+        where:  { userId: user.id },
+        update: {}, // already exists — don't overwrite an existing subscription
+        create: {
+          userId:      user.id,
+          tier:        "FREE",      // fallback tier once trial expires
+          status:      "TRIALING",
+          trialEndsAt: new Date(Date.now() + TRIAL_MS),
+        },
+      });
+    },
   },
 
   callbacks: {

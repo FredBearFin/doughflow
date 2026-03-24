@@ -36,8 +36,8 @@ const PRO_FEATURES = [
 
 const FAQ = [
   {
-    q: "Is the free plan actually free?",
-    a: "Yes, forever. No credit card, no expiry. You keep your 3 recipes and 3 ingredients as long as you want.",
+    q: "What is the 6-week free trial?",
+    a: "Every new account gets 6 weeks of full Pro access — Bake Plan, waste logging, analytics, everything. No credit card required. After 6 weeks you choose: pay $9/mo to keep it all, or drop to the limited free plan.",
   },
   {
     q: "What is the Bake Plan?",
@@ -48,8 +48,8 @@ const FAQ = [
     a: "Pay $99 upfront for a full year — that's effectively one month free compared to paying $9/mo for 12 months ($108). You can switch between monthly and annual at any time.",
   },
   {
-    q: "What happens to my data if I downgrade?",
-    a: "Nothing is deleted. You'll lose access to Pro features but all your recipes, logs, and history stay intact. Upgrade again any time to get it all back.",
+    q: "What happens when my trial ends?",
+    a: "You drop to the limited free plan — 3 recipes, 3 ingredients, no Bake Plan or waste logging. Your data stays completely intact. Upgrade any time to get it all back instantly.",
   },
   {
     q: "Can I cancel anytime?",
@@ -89,13 +89,13 @@ export default function PricingPage() {
       {/* Header */}
       <section className="max-w-2xl mx-auto px-8 pt-16 pb-10 text-center">
         <h1 className="text-4xl font-bold text-stone-900 mb-3">
-          Free, or everything.
+          6 weeks free. Then $9/mo.
         </h1>
         <p className="text-lg text-stone-500 mb-2">
-          Start free, upgrade when you need more.
+          Every new account gets a full 6-week trial — no credit card, no limits.
         </p>
         <p className="text-sm text-stone-400">
-          No credit card required. Cancel anytime.
+          After your trial, keep the features you love for $9/mo. Or drop to the free plan.
         </p>
 
         {/* Billing toggle */}
@@ -135,7 +135,7 @@ export default function PricingPage() {
                 <span className="text-stone-400 text-sm mb-1">/ forever</span>
               </div>
               <p className="text-sm text-stone-400">
-                Get a feel for the app. No card, no expiry.
+                What you drop to after your 6-week trial — unless you upgrade.
               </p>
             </div>
 
@@ -157,7 +157,7 @@ export default function PricingPage() {
               href="/login"
               className="w-full inline-flex items-center justify-center h-10 rounded-lg text-sm font-semibold bg-stone-100 text-stone-500 hover:bg-stone-200 transition-colors"
             >
-              Start for free
+              Start your free trial
             </Link>
           </div>
 
@@ -189,7 +189,7 @@ export default function PricingPage() {
                 </div>
               )}
               <p className="text-sm text-stone-500 mt-1">
-                Everything you need to run your baking business.
+                Everything in your trial, kept forever.
               </p>
             </div>
 
@@ -208,17 +208,17 @@ export default function PricingPage() {
               href="/login"
               className="w-full inline-flex items-center justify-center h-10 rounded-lg text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-colors"
             >
-              Get started free →
+              Start your 6-week free trial →
             </Link>
             <p className="text-center text-xs text-stone-400 mt-2">
-              Free plan first, upgrade inside the app
+              No credit card · Full access for 6 weeks
             </p>
           </div>
 
         </div>
 
         <p className="text-center text-sm text-stone-400 mt-8">
-          Not sure? Start free — you&apos;ll know when you need more.
+          Not sure? Start your 6-week trial — no card needed, cancel anytime.
         </p>
       </section>
 

@@ -42,8 +42,8 @@ const TIER_LABEL: Record<string, string> = {
 export function Sidebar() {
   const pathname = usePathname();
   const { open, setOpen } = useSidebar();
-  const { tier, isLoading, hasWaste } = useTier();
-  const isTopTier = tier === "PAID";
+  const { tier, isLoading, hasWaste, isTrialing, trialDaysLeft } = useTier();
+  const isTopTier = tier === "PAID" && !isTrialing;
 
   return (
     <>
@@ -102,11 +102,28 @@ export function Sidebar() {
       {!isLoading && (
         <div className="px-3 pt-3 pb-1 border-t border-stone-100">
           {isTopTier ? (
+            // Paid subscriber — static badge, no upsell
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 text-amber-700 text-xs font-semibold">
               <Sparkles className="h-3.5 w-3.5 shrink-0" />
               Pro Plan
             </div>
+          ) : isTrialing ? (
+            // Free trial active — show countdown, link to pricing
+            <Link
+              href="/pricing"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 bg-amber-50 hover:bg-amber-100 transition-colors group"
+            >
+              <div>
+                <p className="text-xs font-semibold text-amber-700">Free Trial</p>
+                <p className="text-[10px] text-amber-600 mt-0.5">
+                  {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} left · Upgrade →
+                </p>
+              </div>
+              <Sparkles className="h-4 w-4 text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
+            </Link>
           ) : (
+            // Free tier (trial expired or never trialed)
             <Link
               href="/pricing"
               onClick={() => setOpen(false)}
@@ -116,7 +133,7 @@ export function Sidebar() {
                 <p className="text-xs font-semibold text-amber-700">
                   {TIER_LABEL[tier] ?? tier} Plan
                 </p>
-                <p className="text-[10px] text-amber-600 mt-0.5">Upgrade →</p>
+                <p className="text-[10px] text-amber-600 mt-0.5">Upgrade to Pro →</p>
               </div>
               <Sparkles className="h-4 w-4 text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
             </Link>
