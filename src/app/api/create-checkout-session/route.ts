@@ -26,7 +26,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
   // ── Auth check ────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   if (!stripeCustomerId) {
     // First checkout — create a new Customer in Stripe
-    const customer = await stripe.customers.create({
+    const customer = await getStripe().customers.create({
       email:    userEmail,
       metadata: { userId },           // lets us look the user up from a customer ID
     });
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
   const cancelUrl  = `${origin}/pricing`;
 
   // ── Create Checkout Session ───────────────────────────────────────────────
-  const checkoutSession = await stripe.checkout.sessions.create({
+  const checkoutSession = await getStripe().checkout.sessions.create({
     customer:              stripeCustomerId,
     mode:                  "subscription",
     line_items: [

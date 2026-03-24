@@ -1,53 +1,67 @@
 /**
- * Stripe client singleton — src/lib/stripe.ts
+ * Stripe client — src/lib/stripe.ts
  *
- * Same HMR-safe singleton pattern as prisma.ts.
- * In dev, Next.js hot-reloads wipe the module cache, so without the global
- * guard we'd recreate the Stripe client (and re-read the secret key) on every
- * file save.  In production modules evaluate once — the guard is a no-op.
+ * IMPORTANT: the client is initialised LAZILY via getStripe().
+ *
+ * Why not a module-level singleton like prisma.ts?
+ * Next.js evaluates server-side modules at build time when collecting page
+ * data.  `new Stripe(key)` throws immediately if `key` is falsy — which it
+ * is during a Vercel build before env vars are applied at runtime.
+ * A lazy getter defers construction until the first actual HTTP request, so
+ * builds succeed even when STRIPE_SECRET_KEY is not in the build environment.
  *
  * Usage (server-side only):
- *   import { stripe } from "@/lib/stripe";
- *   const session = await stripe.checkout.sessions.create({ ... });
- *
- * The publishable key lives in NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY and is
- * used directly on the client (pricing page redirect) — it doesn't need a
- * module-level singleton.
+ *   import { getStripe } from "@/lib/stripe";
+ *   const session = await getStripe().checkout.sessions.create({ ... });
  */
 
 import Stripe from "stripe";
 
-const globalForStripe = globalThis as unknown as {
-  stripe: Stripe | undefined;
-};
+let _stripe: Stripe | undefined;
 
-export const stripe =
-  globalForStripe.stripe ??
-  new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2026-02-25.clover", // pinned to the installed SDK's default
+/**
+ * Returns the shared Stripe client, creating it on the first call.
+ * Throws a clear error at request time if STRIPE_SECRET_KEY is missing
+ * rather than silently failing or crashing the build.
+ */
+export function getStripe(): Stripe {
+  if (_stripe) return _stripe;
+
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error(
+      "STRIPE_SECRET_KEY is not set. Add it to .env.local and your Vercel environment variables."
+    );
+  }
+
+  _stripe = new Stripe(key, {
+    apiVersion: "2026-02-25.clover", // pinned to installed SDK default
     typescript: true,
   });
 
-if (process.env.NODE_ENV !== "production") globalForStripe.stripe = stripe;
+  return _stripe;
+}
 
 // ── Price ID helpers ──────────────────────────────────────────────────────────
-// Read once at module initialisation so every route gets a consistent value.
-// All four must be set in .env.local / Vercel env before billing goes live.
+// Read at call time (not module load) so they're always current.
 
-export const PRICE_IDS = {
-  COTTAGE_MONTHLY:  process.env.STRIPE_PRICE_COTTAGE_MONTHLY  ?? "",
-  BAKER_MONTHLY:    process.env.STRIPE_PRICE_BAKER_MONTHLY    ?? "",
-  ARTISAN_MONTHLY:  process.env.STRIPE_PRICE_ARTISAN_MONTHLY  ?? "",
-  ARTISAN_ANNUAL:   process.env.STRIPE_PRICE_ARTISAN_ANNUAL   ?? "",
-} as const;
+export function getPriceIds() {
+  return {
+    COTTAGE_MONTHLY: process.env.STRIPE_PRICE_COTTAGE_MONTHLY ?? "",
+    BAKER_MONTHLY:   process.env.STRIPE_PRICE_BAKER_MONTHLY   ?? "",
+    ARTISAN_MONTHLY: process.env.STRIPE_PRICE_ARTISAN_MONTHLY ?? "",
+    ARTISAN_ANNUAL:  process.env.STRIPE_PRICE_ARTISAN_ANNUAL  ?? "",
+  };
+}
 
 /** Map a Stripe Price ID back to a DoughFlow tier (used by the webhook). */
 export function tierForPriceId(priceId: string): "COTTAGE" | "BAKER" | "ARTISAN" | null {
+  const ids = getPriceIds();
   switch (priceId) {
-    case PRICE_IDS.COTTAGE_MONTHLY:  return "COTTAGE";
-    case PRICE_IDS.BAKER_MONTHLY:    return "BAKER";
-    case PRICE_IDS.ARTISAN_MONTHLY:  return "ARTISAN";
-    case PRICE_IDS.ARTISAN_ANNUAL:   return "ARTISAN";
-    default:                          return null;
+    case ids.COTTAGE_MONTHLY: return "COTTAGE";
+    case ids.BAKER_MONTHLY:   return "BAKER";
+    case ids.ARTISAN_MONTHLY: return "ARTISAN";
+    case ids.ARTISAN_ANNUAL:  return "ARTISAN";
+    default:                   return null;
   }
 }
