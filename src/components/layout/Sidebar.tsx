@@ -35,17 +35,15 @@ const nav = [
 ];
 
 const TIER_LABEL: Record<string, string> = {
-  FREE:    "Free",
-  COTTAGE: "Cottage",
-  BAKER:   "Baker",
-  ARTISAN: "Artisan",
+  FREE: "Free",
+  PAID: "Pro",
 };
 
 export function Sidebar() {
   const pathname = usePathname();
   const { open, setOpen } = useSidebar();
   const { tier, isLoading, hasWaste } = useTier();
-  const isTopTier = tier === "ARTISAN";
+  const isTopTier = tier === "PAID";
 
   return (
     <>
@@ -106,7 +104,7 @@ export function Sidebar() {
           {isTopTier ? (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 text-amber-700 text-xs font-semibold">
               <Sparkles className="h-3.5 w-3.5 shrink-0" />
-              Artisan Plan
+              Pro Plan
             </div>
           ) : (
             <Link

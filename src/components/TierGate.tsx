@@ -45,7 +45,7 @@ export function TierGate({
   description = "See exactly how much to bake this weekend based on your real sales history.",
   ctaLabel = "Unlock to see how much to bake this weekend →",
   ctaHref = "/pricing",
-  finePrint = "Available on Cottage ($6/mo) and above · Free forever for basic tracking",
+  finePrint = "Available on the Pro plan · $9/mo or $99/yr",
 }: TierGateProps) {
   // While resolving, or when allowed, render normally — no flash of lock.
   if (isLoading || allowed) return <>{children}</>;

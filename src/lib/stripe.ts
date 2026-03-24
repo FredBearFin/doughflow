@@ -47,26 +47,21 @@ export function getStripe(): Stripe {
 
 export function getPriceIds() {
   return {
-    COTTAGE_MONTHLY: process.env.STRIPE_PRICE_COTTAGE_MONTHLY ?? "",
-    COTTAGE_ANNUAL:  process.env.STRIPE_PRICE_COTTAGE_ANNUAL  ?? "",
-    BAKER_MONTHLY:   process.env.STRIPE_PRICE_BAKER_MONTHLY   ?? "",
-    BAKER_ANNUAL:    process.env.STRIPE_PRICE_BAKER_ANNUAL    ?? "",
-    // Artisan — kept in code but not shown on pricing page yet
-    ARTISAN_MONTHLY: process.env.STRIPE_PRICE_ARTISAN_MONTHLY ?? "",
-    ARTISAN_ANNUAL:  process.env.STRIPE_PRICE_ARTISAN_ANNUAL  ?? "",
+    PAID_MONTHLY: process.env.STRIPE_PRICE_PAID_MONTHLY ?? "",
+    PAID_ANNUAL:  process.env.STRIPE_PRICE_PAID_ANNUAL  ?? "",
   };
 }
 
-/** Map a Stripe Price ID back to a DoughFlow tier (used by the webhook). */
-export function tierForPriceId(priceId: string): "COTTAGE" | "BAKER" | "ARTISAN" | null {
+/**
+ * Map a Stripe Price ID back to a DB tier value (used by the webhook).
+ * Both Pro billing intervals map to "BAKER" in the DB — the single
+ * "paid" state stored against the legacy enum.
+ */
+export function tierForPriceId(priceId: string): "BAKER" | null {
   const ids = getPriceIds();
   switch (priceId) {
-    case ids.COTTAGE_MONTHLY:
-    case ids.COTTAGE_ANNUAL:  return "COTTAGE";
-    case ids.BAKER_MONTHLY:
-    case ids.BAKER_ANNUAL:    return "BAKER";
-    case ids.ARTISAN_MONTHLY:
-    case ids.ARTISAN_ANNUAL:  return "ARTISAN";
-    default:                   return null;
+    case ids.PAID_MONTHLY:
+    case ids.PAID_ANNUAL:  return "BAKER";
+    default:               return null;
   }
 }

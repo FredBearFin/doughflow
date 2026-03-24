@@ -129,8 +129,8 @@ export default function WastePage() {
           isLoading={tierLoading}
           title="Log your bakes and track waste"
           description="Log what you baked and sold each day — DoughFlow learns your patterns and helps you bake the right amount for Saturday's market."
-          ctaLabel="Log your bakes and track waste — unlock with Cottage →"
-          finePrint="Available on Cottage ($6/mo) and above · Free plan includes basic recipe tracking"
+          ctaLabel="Log your bakes and track waste — upgrade to Pro →"
+          finePrint="Available on the Pro plan · $9/mo or $99/yr"
           preview={
             <Card>
               <CardHeader>

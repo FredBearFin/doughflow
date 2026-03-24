@@ -161,10 +161,10 @@ export default function EventsPage() {
         <TierGate
           allowed={hasForecast}
           isLoading={tierLoading}
-          title="Event overrides — Cottage and above"
+          title="Event overrides — Pro feature"
           description="Set date multipliers for holidays and market specials. The Bake Plan applies them automatically — so you bake double for Valentine's Day without thinking about it."
-          ctaLabel="Unlock Event Overrides — upgrade to Cottage →"
-          finePrint="Available on Cottage ($6/mo) and above"
+          ctaLabel="Unlock Event Overrides — upgrade to Pro →"
+          finePrint="Available on the Pro plan · $9/mo or $99/yr"
           preview={
             <Card>
               <CardHeader>

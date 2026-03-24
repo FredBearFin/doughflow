@@ -31,10 +31,8 @@ import { useTier } from "@/hooks/useTier";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
 const TIER_LABEL: Record<string, string> = {
-  FREE:    "Free",
-  COTTAGE: "Cottage",
-  BAKER:   "Baker",
-  ARTISAN: "Artisan",
+  FREE: "Free",
+  PAID: "Pro",
 };
 
 /**
@@ -209,16 +207,8 @@ export default function PantryPage() {
         onOpenChange={setShowUpgrade}
         title="Ingredient limit reached"
         limitLine={`${TIER_LABEL[tier.tier] ?? tier.tier} accounts can track up to ${tier.ingredientLimit} ingredients.`}
-        unlockLine={
-          tier.tier === "FREE"
-            ? "Upgrade to Cottage for up to 25 ingredients, Bake Plan forecasts, waste logging, and more — just $6/mo."
-            : "Upgrade to Baker for unlimited ingredients, analytics, suggested pricing, and more — just $14/mo."
-        }
-        ctaLabel={
-          tier.tier === "FREE"
-            ? "Upgrade to Cottage — $6/mo"
-            : "Upgrade to Baker — $14/mo"
-        }
+        unlockLine="Upgrade to Pro for unlimited ingredients, Bake Plan forecasts, waste logging, analytics, and more — just $9/mo."
+        ctaLabel="Upgrade to Pro — $9/mo"
       />
     </div>
   );

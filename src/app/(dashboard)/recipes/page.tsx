@@ -64,8 +64,8 @@ export default function RecipesPage() {
         >
           <span>
             {atLimit
-              ? `You've used all ${tier.recipeLimit} recipe slots on the Free plan.`
-              : `${tier.recipeLimit - recipeCount} recipe slot${tier.recipeLimit - recipeCount === 1 ? "" : "s"} remaining on the Free plan.`}
+              ? `You've used all ${tier.recipeLimit} recipe slots on the free plan.`
+              : `${tier.recipeLimit - recipeCount} recipe slot${tier.recipeLimit - recipeCount === 1 ? "" : "s"} remaining on the free plan.`}
           </span>
           <button
             onClick={() => setShowUpgrade(true)}
@@ -214,8 +214,8 @@ export default function RecipesPage() {
         onOpenChange={setShowUpgrade}
         title="Recipe limit reached"
         limitLine={`Free accounts can track up to ${tier.recipeLimit ?? 3} recipes.`}
-        unlockLine="Upgrade to Cottage for up to 10 recipes, Bake Plan forecasts, full cost tracking, and more — just $6/mo."
-        ctaLabel="Upgrade to Cottage — $6/mo"
+        unlockLine="Upgrade to Pro for unlimited recipes, Bake Plan forecasts, full cost tracking, and more — just $9/mo."
+        ctaLabel="Upgrade to Pro — $9/mo"
       />
     </div>
   );

@@ -288,7 +288,7 @@ export function RecipeFormDialog({
                     <Lock className="h-3.5 w-3.5 text-stone-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-stone-600">Quick Flip Pricing — Baker+</p>
+                    <p className="text-sm font-medium text-stone-600">Quick Flip Pricing — Pro</p>
                     <p className="text-xs text-stone-400 leading-snug">Auto-calculates your sell price at any target margin.</p>
                   </div>
                   <Link

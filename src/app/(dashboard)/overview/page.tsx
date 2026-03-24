@@ -109,8 +109,8 @@ export default function OverviewPage() {
           isLoading={tierLoading}
           title="Waste analytics & trends"
           description="See which products waste the most, which days are worst, and the dollar cost of what you throw away. Upgrade to Baker to unlock charts and KPI cards."
-          ctaLabel="Unlock waste analytics — upgrade to Baker →"
-          finePrint="Available on Baker ($14/mo) and above"
+          ctaLabel="Unlock waste analytics — upgrade to Pro →"
+          finePrint="Available on the Pro plan · $9/mo or $99/yr"
           preview={
             <div className="space-y-4">
               <div className="flex items-center gap-3 pt-2">
