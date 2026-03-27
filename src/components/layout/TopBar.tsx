@@ -1,100 +1,66 @@
-/**
- * TopBar component — the page-level header bar shown on every dashboard page.
- *
- * Renders a horizontal header that spans the full width of the main content
- * area (not the sidebar). It contains:
- *   1. A page title (h1) on the left side — supplied by the parent page
- *   2. An optional slot for action buttons or other controls (right side)
- *      — passed as `children` (e.g. "New Order" or "Edit" buttons)
- *   3. A user avatar (right-most) showing either the user's Google profile
- *      photo or an initials fallback badge
- *
- * The TopBar reads the current session via `useSession` so it can display
- * user information without the parent having to pass it down. This makes it
- * a self-contained Client Component that can be dropped into any page.
- *
- * The height (h-16 = 64px) matches the Sidebar logo section height so both
- * align visually on the same horizontal baseline.
- */
-
 "use client";
+
+/**
+ * TopBar — the page-level header bar shown on every dashboard page.
+ *
+ * - Page title (h1) on the left
+ * - Optional action slot (right of title)
+ * - User avatar (rightmost)
+ * - Hamburger for mobile sidebar trigger
+ */
 
 import { useSession } from "next-auth/react";
 import { Menu } from "lucide-react";
 import { useSidebar } from "./sidebar-context";
 
-/**
- * Props for the TopBar component.
- *
- * @param title    - The page name displayed as a heading (e.g. "Pantry", "Analytics")
- * @param children - Optional slot for page-specific action elements (buttons, etc.)
- *                   rendered between the title and the user avatar
- */
 interface TopBarProps {
   title: string;
   children?: React.ReactNode;
 }
 
-/**
- * TopBar renders the fixed page header for all dashboard pages.
- * It is used at the top of each page component directly (not inside a layout)
- * so individual pages can customise their action buttons via children.
- *
- * @param title    - The page heading to display
- * @param children - Optional action elements (e.g. "Add Ingredient" button)
- */
 export function TopBar({ title, children }: TopBarProps) {
   const { data: session } = useSession();
   const { setOpen } = useSidebar();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-stone-200 bg-white px-4 md:px-6">
-      <div className="flex items-center gap-3">
-        {/* Hamburger — mobile only */}
+    <header
+      className="flex h-16 items-center justify-between px-4 md:px-6 border-b border-stone-200/80 bg-white/90 sticky top-0 z-30"
+      style={{ backdropFilter: "blur(8px)" }}
+    >
+      {/* Left: hamburger (mobile) + page title */}
+      <div className="flex items-center gap-3 min-w-0">
         <button
-          className="md:hidden p-1.5 -ml-1 rounded-lg text-stone-500 hover:bg-stone-100 transition-colors"
+          className="md:hidden flex-shrink-0 p-2 -ml-2 rounded-xl text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition-colors"
           onClick={() => setOpen(true)}
           aria-label="Open menu"
         >
           <Menu className="h-5 w-5" />
         </button>
-        <h1 className="text-xl font-semibold text-stone-900">{title}</h1>
+        <h1 className="text-lg font-bold text-stone-900 truncate">{title}</h1>
       </div>
 
-      {/* Right-hand area: action slot + user avatar */}
-      <div className="flex items-center gap-3">
-        {/* Page-specific action buttons injected by the parent page */}
+      {/* Right: action slot + avatar */}
+      <div className="flex items-center gap-3 shrink-0">
         {children}
 
-        {/* User avatar — only rendered when a session exists */}
         {session?.user && (
-          <div className="flex items-center gap-2">
-            {session.user.image ? (
-              /*
-               * If the user signed in via Google, their profile picture is
-               * available. We use a plain <img> here (eslint-disable needed
-               * because next/image would require a domain whitelist for Google's
-               * CDN and adds complexity for a small avatar).
-               */
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={session.user.image}
-                alt={session.user.name ?? ""}
-                className="h-8 w-8 rounded-full"
-              />
-            ) : (
-              /*
-               * Fallback: derive an initial from the user's name or email.
-               * Takes the first character of name (preferred) or email,
-               * uppercased. Falls back to "?" if neither is available.
-               */
-              <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
-                <span className="text-amber-700 font-semibold text-sm">
-                  {(session.user.name ?? session.user.email ?? "?")[0].toUpperCase()}
-                </span>
-              </div>
-            )}
-          </div>
+          session.user.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={session.user.image}
+              alt={session.user.name ?? ""}
+              className="h-8 w-8 rounded-full ring-2 ring-amber-100 ring-offset-1 shadow-sm"
+            />
+          ) : (
+            <div
+              className="h-8 w-8 rounded-full flex items-center justify-center shadow-sm ring-2 ring-amber-100 ring-offset-1"
+              style={{ background: "linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)" }}
+            >
+              <span className="text-white font-bold text-sm">
+                {(session.user.name ?? session.user.email ?? "?")[0].toUpperCase()}
+              </span>
+            </div>
+          )
         )}
       </div>
     </header>

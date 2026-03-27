@@ -1,7 +1,6 @@
 "use client";
 
 // Sidebar navigation — fixed left panel shown on all dashboard pages.
-// Uses usePathname for active state detection (client-side hook).
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,22 +21,16 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "./sidebar-context";
 import { useTier } from "@/hooks/useTier";
 
-// Core navigation items — lean set matching the app's focused scope
 const nav = [
-  { href: "/overview",  label: "Today's Kitchen", icon: LayoutDashboard },
-  { href: "/bake",      label: "Bake Plan",        icon: ChefHat },
-  { href: "/pantry",    label: "Pantry",           icon: Package },
-  { href: "/recipes",   label: "Products",         icon: UtensilsCrossed },
-  { href: "/waste",     label: "End of Day",       icon: ClipboardList },
-  { href: "/events",    label: "Event Overrides",  icon: CalendarDays },
-  { href: "/data",      label: "Import / Export",  icon: Database },
-  { href: "/settings",  label: "Settings",         icon: Settings },
+  { href: "/overview",  label: "Today's Kitchen",  icon: LayoutDashboard },
+  { href: "/bake",      label: "Bake Plan",         icon: ChefHat },
+  { href: "/pantry",    label: "Pantry",             icon: Package },
+  { href: "/recipes",   label: "Products",           icon: UtensilsCrossed },
+  { href: "/waste",     label: "End of Day",         icon: ClipboardList },
+  { href: "/events",    label: "Event Overrides",    icon: CalendarDays },
+  { href: "/data",      label: "Import / Export",    icon: Database },
+  { href: "/settings",  label: "Settings",           icon: Settings },
 ];
-
-const TIER_LABEL: Record<string, string> = {
-  FREE: "Free",
-  PAID: "Pro",
-};
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -50,108 +43,130 @@ export function Sidebar() {
       {/* Mobile backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
           onClick={() => setOpen(false)}
         />
       )}
 
-    <aside className={cn(
-      "flex h-screen w-60 flex-col border-r border-stone-200 bg-white",
-      // Mobile: fixed overlay drawer, slides in from left
-      "fixed inset-y-0 left-0 z-50 transition-transform duration-200",
-      // Desktop: static sidebar in normal flow
-      "md:relative md:z-auto md:translate-x-0",
-      open ? "translate-x-0" : "-translate-x-full"
-    )}>
-      {/* Logo */}
-      <div className="flex h-16 items-center gap-2 px-6 border-b border-stone-100">
-        <div className="h-8 w-8 rounded-lg bg-amber-500 flex items-center justify-center">
-          <span className="text-white font-bold text-sm">D</span>
+      <aside
+        className={cn(
+          // Base layout
+          "flex h-screen w-60 flex-col",
+          // Visual treatment — subtle gradient + right shadow
+          "border-r border-stone-200/80",
+          // Mobile: fixed overlay drawer
+          "fixed inset-y-0 left-0 z-50 transition-transform duration-200 ease-out",
+          // Desktop: static in flow
+          "md:relative md:z-auto md:translate-x-0",
+          open ? "translate-x-0" : "-translate-x-full"
+        )}
+        style={{
+          background: "linear-gradient(180deg, #FFFFFF 0%, #FAFAF9 100%)",
+          boxShadow: "1px 0 0 0 rgba(0,0,0,0.06), 4px 0 16px -4px rgba(0,0,0,0.05)",
+        }}
+      >
+        {/* ── Logo ────────────────────────────────────────────────── */}
+        <div className="flex h-16 items-center gap-2.5 px-5 border-b border-stone-100">
+          <div
+            className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+            style={{ background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)" }}
+          >
+            <span className="text-white font-black text-sm leading-none">D</span>
+          </div>
+          <span className="font-bold text-stone-900 text-[17px] tracking-tight">DoughFlow</span>
         </div>
-        <span className="font-semibold text-stone-900 text-lg">DoughFlow</span>
-      </div>
 
-      {/* Nav links */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3">
-        {nav.map(({ href, label, icon: Icon }) => {
-          // Hide tier-gated nav items for users who don't have access yet
-          if (href === "/waste" && !isLoading && !hasWaste) return null;
+        {/* ── Nav links ───────────────────────────────────────────── */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2.5">
+          {nav.map(({ href, label, icon: Icon }) => {
+            if (href === "/waste" && !isLoading && !hasWaste) return null;
 
-          // Prefix matching so child routes keep the parent item highlighted
-          const active = pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setOpen(false)}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-0.5",
-                active
-                  ? "bg-amber-50 text-amber-700"
-                  : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+            const active = pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 mb-0.5",
+                  active
+                    ? "bg-amber-50 text-amber-700"
+                    : "text-stone-500 hover:bg-stone-100/80 hover:text-stone-800"
+                )}
+              >
+                {/* Active indicator bar */}
+                {active && (
+                  <span
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full"
+                    style={{ background: "linear-gradient(180deg, #F59E0B 0%, #D97706 100%)" }}
+                  />
+                )}
+                <Icon
+                  className={cn(
+                    "h-4 w-4 shrink-0 transition-colors",
+                    active ? "text-amber-500" : "text-stone-400 group-hover:text-stone-600"
+                  )}
+                />
+                <span className={active ? "font-semibold" : ""}>{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
 
-      {/* Plan badge + upgrade CTA */}
-      {!isLoading && (
-        <div className="px-3 pt-3 pb-1 border-t border-stone-100">
-          {isTopTier ? (
-            // Paid subscriber — static badge, no upsell
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 text-amber-700 text-xs font-semibold">
-              <Sparkles className="h-3.5 w-3.5 shrink-0" />
-              Pro Plan
-            </div>
-          ) : isTrialing ? (
-            // Free trial active — show countdown, link to pricing
-            <Link
-              href="/pricing"
-              onClick={() => setOpen(false)}
-              className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 bg-amber-50 hover:bg-amber-100 transition-colors group"
-            >
-              <div>
-                <p className="text-xs font-semibold text-amber-700">Free Trial</p>
-                <p className="text-[10px] text-amber-600 mt-0.5">
-                  {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} left · Upgrade →
-                </p>
+        {/* ── Plan badge ──────────────────────────────────────────── */}
+        {!isLoading && (
+          <div className="px-2.5 pt-2 pb-1 border-t border-stone-100">
+            {isTopTier ? (
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-amber-700"
+                style={{ background: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)" }}
+              >
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                Pro Plan — Fully Unlocked
               </div>
-              <Sparkles className="h-4 w-4 text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
-            </Link>
-          ) : (
-            // Free tier (trial expired or never trialed)
-            <Link
-              href="/pricing"
-              onClick={() => setOpen(false)}
-              className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 bg-amber-50 hover:bg-amber-100 transition-colors group"
-            >
-              <div>
-                <p className="text-xs font-semibold text-amber-700">
-                  {TIER_LABEL[tier] ?? tier} Plan
-                </p>
-                <p className="text-[10px] text-amber-600 mt-0.5">Upgrade to Pro →</p>
-              </div>
-              <Sparkles className="h-4 w-4 text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
-            </Link>
-          )}
+            ) : isTrialing ? (
+              <Link
+                href="/pricing"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 transition-all hover:shadow-sm group"
+                style={{ background: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)" }}
+              >
+                <div>
+                  <p className="text-xs font-bold text-amber-800">Free Trial</p>
+                  <p className="text-[11px] text-amber-700 mt-0.5 font-medium">
+                    {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} left · Upgrade →
+                  </p>
+                </div>
+                <Sparkles className="h-4 w-4 text-amber-500 shrink-0 group-hover:rotate-12 transition-transform duration-200" />
+              </Link>
+            ) : (
+              <Link
+                href="/pricing"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 transition-all hover:shadow-sm group"
+                style={{ background: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)" }}
+              >
+                <div>
+                  <p className="text-xs font-bold text-amber-800">Free Plan</p>
+                  <p className="text-[11px] text-amber-700 mt-0.5 font-medium">Upgrade to Pro →</p>
+                </div>
+                <Sparkles className="h-4 w-4 text-amber-500 shrink-0 group-hover:rotate-12 transition-transform duration-200" />
+              </Link>
+            )}
+          </div>
+        )}
+
+        {/* ── Sign out ────────────────────────────────────────────── */}
+        <div className="p-2.5 pb-4">
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors group"
+          >
+            <LogOut className="h-4 w-4 group-hover:text-stone-500 transition-colors" />
+            Sign out
+          </button>
         </div>
-      )}
-
-      {/* Sign out */}
-      <div className="p-3">
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-50 hover:text-stone-700 transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </button>
-      </div>
-    </aside>
+      </aside>
     </>
   );
 }

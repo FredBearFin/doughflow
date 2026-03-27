@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ChefHat, Sparkles, Lock } from "lucide-react";
 import {
   Dialog,
@@ -23,39 +22,19 @@ interface UpgradeModalProps {
   unlockLine?: string;
   /** CTA button text */
   ctaLabel?: string;
-  /** billing interval to pass to checkout — defaults to "monthly" */
-  billing?: "monthly" | "annual";
+  /** Where the CTA links — defaults to /pricing */
+  ctaHref?: string;
 }
 
 export function UpgradeModal({
   open,
   onOpenChange,
-  title     = "You've hit the free limit",
+  title = "You've hit the free limit",
   limitLine = "Free accounts can track up to 3 recipes.",
   unlockLine = "Upgrade to Pro for unlimited recipes, Bake Plan forecasts, full cost tracking, and more.",
-  ctaLabel  = "Upgrade to Pro — $9/mo",
-  billing   = "monthly",
+  ctaLabel = "Upgrade to Pro — $9/mo",
+  ctaHref = "/pricing",
 }: UpgradeModalProps) {
-  const router  = useRouter();
-  const [loading, setLoading] = useState(false);
-
-  async function handleUpgrade() {
-    setLoading(true);
-    try {
-      const res  = await fetch("/api/stripe/checkout", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ tier: "pro", billing }),
-      });
-      const data = await res.json() as { url?: string; error?: string };
-      if (data.url) {
-        router.push(data.url);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm text-center">
@@ -80,12 +59,13 @@ export function UpgradeModal({
         {/* Actions */}
         <div className="mt-5 flex flex-col gap-2">
           <Button
-            onClick={handleUpgrade}
-            disabled={loading}
+            asChild
             className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold"
           >
-            <ChefHat className="h-4 w-4 mr-1.5" />
-            {loading ? "Redirecting…" : ctaLabel}
+            <Link href={ctaHref} onClick={() => onOpenChange(false)}>
+              <ChefHat className="h-4 w-4 mr-1.5" />
+              {ctaLabel}
+            </Link>
           </Button>
           <Button
             variant="ghost"
