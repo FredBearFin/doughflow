@@ -10,15 +10,26 @@ export const subscriptionRouter = router({
       select: { tier: true, status: true, currentPeriodEnd: true, trialEndsAt: true },
     });
 
-    // No row → pre-dates the subscriptions table, treat as FREE (no trial)
+    // No row → pre-dates the subscriptions table OR createUser event missed.
+    // Auto-create a 6-week trial so existing users get full access.
     if (!sub) {
+      const TRIAL_MS  = 42 * 24 * 60 * 60 * 1000;
+      const trialEndsAt = new Date(Date.now() + TRIAL_MS);
+      await ctx.prisma.subscription.create({
+        data: {
+          userId,
+          tier:         "FREE",
+          status:       "TRIALING",
+          trialEndsAt,
+        },
+      });
       return {
-        tier:          "FREE" as const,
-        status:        "ACTIVE" as const,
+        tier:             "BAKER" as const,
+        status:           "TRIALING" as const,
         currentPeriodEnd: null,
-        isTrialing:    false,
-        trialDaysLeft: 0,
-        trialEndsAt:   null,
+        isTrialing:       true,
+        trialDaysLeft:    42,
+        trialEndsAt,
       };
     }
 

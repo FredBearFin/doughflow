@@ -33,17 +33,17 @@ function ExportBtn({ label, icon: Icon, allowed, tooltip, onClick }: ExportBtnPr
 
   return (
     <div className="relative group">
-      <Link href="/pricing">
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5 opacity-50 cursor-pointer"
-          tabIndex={-1}
-        >
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1.5 opacity-50 cursor-pointer"
+        asChild
+      >
+        <Link href="/pricing">
           <Lock className="h-4 w-4" />
           {label}
-        </Button>
-      </Link>
+        </Link>
+      </Button>
       {/* Tooltip */}
       <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 hidden group-hover:block whitespace-nowrap rounded bg-stone-800 px-2 py-1 text-xs text-white z-10">
         {tooltip}
