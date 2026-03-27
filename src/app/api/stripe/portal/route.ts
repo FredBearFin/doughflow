@@ -1,0 +1,55 @@
+/**
+ * POST /api/stripe/portal
+ *
+ * Creates a Stripe Billing Portal session so a subscriber can manage their
+ * own subscription (upgrade, downgrade, cancel, update payment method,
+ * download invoices) without us building any of that UI ourselves.
+ *
+ * Prerequisites:
+ *   - The user must be authenticated.
+ *   - A stripeCustomerId must exist in user_subscriptions (written the first
+ *     time a checkout session is created).
+ *
+ * Returns:
+ *   { url: string }  — the portal URL; the client redirects there.
+ *
+ * Note: The Stripe Billing Portal must be configured in the Stripe Dashboard
+ * (Settings → Billing → Customer portal) before this will work.
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getStripe } from "@/lib/stripe";
+
+export async function POST(req: NextRequest) {
+  // ── Auth check ────────────────────────────────────────────────────────────
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userId = session.user.id;
+
+  // ── Look up stripeCustomerId ───────────────────────────────────────────────
+  const sub = await prisma.subscription.findUnique({
+    where:  { userId },
+    select: { stripeCustomerId: true },
+  });
+
+  if (!sub?.stripeCustomerId) {
+    return NextResponse.json(
+      { error: "No billing account found. Please subscribe first." },
+      { status: 404 }
+    );
+  }
+
+  // ── Create Billing Portal session ─────────────────────────────────────────
+  const origin     = req.headers.get("origin") ?? process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+  const portalSession = await getStripe().billingPortal.sessions.create({
+    customer:   sub.stripeCustomerId,
+    return_url: `${origin}/settings`,
+  });
+
+  return NextResponse.json({ url: portalSession.url });
+}

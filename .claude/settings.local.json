@@ -22,7 +22,18 @@
       "Bash(grep -A5 \"currentStock.*increment\\\\|currentStock.*decrement\" src/server/routers/*.ts)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Bash(cat \"src/app/\\(dashboard\\)/events/page.tsx\")"
+      "Bash(cat \"src/app/\\(dashboard\\)/events/page.tsx\")",
+      "Bash(npm install:*)",
+      "Bash(node -e \"const s = require\\(''stripe''\\); console.log\\(s.LATEST_API_VERSION\\)\")",
+      "Bash(node -e \"const Stripe = require\\(''stripe''\\); const s = new Stripe\\(''sk_test_x''\\); console.log\\(s.getApiField\\(''version''\\)\\)\")",
+      "Bash(npx tsc:*)",
+      "Bash(npx prisma:*)",
+      "Bash(powershell -Command \"Get-ChildItem ''C:\\\\Users\\\\fww13\\\\Desktop\\\\my_projects\\\\doughflow\\\\prisma'' -Recurse -Name\")",
+      "Bash(ls -la /c/Users/fww13/Desktop/my_projects/doughflow/src/app/\\\\\\(dashboard\\\\\\)/settings/)",
+      "Bash(grep -v \"^$\")",
+      "Bash(xargs ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

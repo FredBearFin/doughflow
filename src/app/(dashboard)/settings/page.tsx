@@ -1,13 +1,13 @@
 /**
  * Settings page — /settings
  *
- * Bakery name and read-only account info.
- * Import / Export has moved to its own page at /data.
+ * Bakery name, account/subscription info, and import/export shortcut.
  */
 
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { useTenantId } from "@/lib/useTenant";
-import { CheckCircle2, Database } from "lucide-react";
+import { CheckCircle2, Database, CreditCard, Sparkles } from "lucide-react";
 
 const schema = z.object({
   name: z.string().min(1, "Bakery name is required"),
@@ -28,15 +28,22 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function SettingsPage() {
-  const tenantId = useTenantId();
-  const utils    = trpc.useUtils();
+  const tenantId     = useTenantId();
+  const utils        = trpc.useUtils();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const justUpgraded = searchParams.get("upgraded") === "1";
 
-  const [saved, setSaved] = useState(false);
+  const [saved,          setSaved]          = useState(false);
+  const [portalLoading,  setPortalLoading]  = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const { data: tenant } = trpc.tenant.get.useQuery(
     { tenantId: tenantId! },
     { enabled: !!tenantId },
   );
+
+  const { data: sub } = trpc.subscription.getMyTier.useQuery();
 
   const update = trpc.tenant.update.useMutation({
     onSuccess: () => {
@@ -56,11 +63,61 @@ export default function SettingsPage() {
     update.mutate({ tenantId, name: data.name });
   };
 
+  async function handleManageBilling() {
+    setPortalLoading(true);
+    try {
+      const res  = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json() as { url?: string };
+      if (data.url) router.push(data.url);
+    } finally {
+      setPortalLoading(false);
+    }
+  }
+
+  async function handleUpgrade() {
+    setCheckoutLoading(true);
+    try {
+      const res  = await fetch("/api/stripe/checkout", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ tier: "pro", billing: "monthly" }),
+      });
+      const data = await res.json() as { url?: string };
+      if (data.url) router.push(data.url);
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }
+
+  // ── Derived subscription display values ───────────────────────────────────
+  const isPaid      = sub && sub.tier !== "FREE" && !sub.isTrialing;
+  const isTrialing  = sub?.isTrialing;
+  const isFreeExpired = sub && sub.tier === "FREE" && sub.status !== "TRIALING";
+  const hasBilling  = isPaid; // has a Stripe customer — can open portal
+
+  const planLabel = isTrialing
+    ? `Pro trial — ${sub.trialDaysLeft} day${sub.trialDaysLeft === 1 ? "" : "s"} left`
+    : isPaid
+      ? "Pro"
+      : "Free";
+
+  const renewalLine = isPaid && sub.currentPeriodEnd
+    ? `Renews ${new Date(sub.currentPeriodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
+    : null;
+
   return (
     <div>
       <TopBar title="Settings" />
 
       <div className="p-6 space-y-6 max-w-2xl">
+
+        {/* Upgrade success banner */}
+        {justUpgraded && (
+          <div className="flex items-center gap-2 text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm font-medium">
+            <Sparkles className="h-4 w-4 shrink-0 text-amber-500" />
+            Welcome to Pro! All features are now unlocked.
+          </div>
+        )}
 
         {/* Bakery info — editable name */}
         <Card>
@@ -89,24 +146,56 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Account info — read-only */}
+        {/* Billing / plan card */}
         <Card>
           <CardHeader>
-            <CardTitle>Account</CardTitle>
+            <CardTitle>Plan &amp; Billing</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <dt className="text-stone-400">Plan</dt>
-              <dd className="font-medium text-stone-900 capitalize">
-                {tenant?.plan?.toLowerCase() ?? "—"}
-              </dd>
+              <dt className="text-stone-400">Current plan</dt>
+              <dd className="font-medium text-stone-900">{planLabel}</dd>
+
+              {renewalLine && (
+                <>
+                  <dt className="text-stone-400">Next renewal</dt>
+                  <dd className="text-stone-700">{renewalLine}</dd>
+                </>
+              )}
+
               <dt className="text-stone-400">Bakery slug</dt>
-              <dd className="font-mono text-stone-700">
-                {tenant?.slug ?? "—"}
-              </dd>
+              <dd className="font-mono text-stone-700">{tenant?.slug ?? "—"}</dd>
             </dl>
-            <p className="text-xs text-stone-400 mt-4">
-              The slug is your URL-safe identifier — contact support to change it.
+
+            <div className="pt-1 flex flex-col gap-2">
+              {hasBilling ? (
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={handleManageBilling}
+                  disabled={portalLoading}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  {portalLoading ? "Opening…" : "Manage billing"}
+                </Button>
+              ) : isFreeExpired || (!isTrialing && !isPaid) ? (
+                <Button
+                  className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-semibold"
+                  onClick={handleUpgrade}
+                  disabled={checkoutLoading}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {checkoutLoading ? "Redirecting…" : "Upgrade to Pro — $9/mo"}
+                </Button>
+              ) : null}
+            </div>
+
+            <p className="text-xs text-stone-400">
+              {hasBilling
+                ? "Cancel or change your plan any time from the billing portal."
+                : isTrialing
+                  ? "Your trial includes full Pro access. No credit card needed until you upgrade."
+                  : "Upgrade any time to unlock Bake Plan, analytics, unlimited recipes, and more."}
             </p>
           </CardContent>
         </Card>
