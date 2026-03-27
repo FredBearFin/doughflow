@@ -1,4 +1,7 @@
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc";
+
+const TRIAL_MS = 42 * 24 * 60 * 60 * 1000; // 6 weeks
 
 export const subscriptionRouter = router({
   getMyTier: protectedProcedure.query(async ({ ctx }) => {
@@ -10,26 +13,17 @@ export const subscriptionRouter = router({
       select: { tier: true, status: true, currentPeriodEnd: true, trialEndsAt: true },
     });
 
-    // No row → pre-dates the subscriptions table OR createUser event missed.
-    // Auto-create a 6-week trial so existing users get full access.
+    // No row → user pre-dates the subscription system and hasn't started a trial yet.
+    // Return FREE with a flag so the UI can offer them an explicit "Start free trial" CTA.
     if (!sub) {
-      const TRIAL_MS  = 42 * 24 * 60 * 60 * 1000;
-      const trialEndsAt = new Date(Date.now() + TRIAL_MS);
-      await ctx.prisma.subscription.create({
-        data: {
-          userId,
-          tier:         "FREE",
-          status:       "TRIALING",
-          trialEndsAt,
-        },
-      });
       return {
-        tier:             "BAKER" as const,
-        status:           "TRIALING" as const,
+        tier:             "FREE" as const,
+        status:           "NONE" as const,
         currentPeriodEnd: null,
-        isTrialing:       true,
-        trialDaysLeft:    42,
-        trialEndsAt,
+        isTrialing:       false,
+        trialDaysLeft:    0,
+        trialEndsAt:      null,
+        canStartTrial:    true,   // signals UI to show the trial prompt
       };
     }
 
@@ -66,6 +60,38 @@ export const subscriptionRouter = router({
       isTrialing:       isActivelyTrialing,
       trialDaysLeft,
       trialEndsAt:      sub.trialEndsAt,
+      canStartTrial:    false,
     };
+  }),
+
+  // ── Explicit trial activation ─────────────────────────────────────────────
+  // Called when a user consciously clicks "Start my free trial".
+  // Only works if they have no existing subscription row.
+  startTrial: protectedProcedure.mutation(async ({ ctx }) => {
+    const userId = ctx.session.user!.id!;
+
+    const existing = await ctx.prisma.subscription.findUnique({
+      where:  { userId },
+      select: { status: true },
+    });
+
+    if (existing) {
+      throw new TRPCError({
+        code:    "BAD_REQUEST",
+        message: "A subscription already exists for this account.",
+      });
+    }
+
+    const trialEndsAt = new Date(Date.now() + TRIAL_MS);
+    await ctx.prisma.subscription.create({
+      data: {
+        userId,
+        tier:      "FREE",
+        status:    "TRIALING",
+        trialEndsAt,
+      },
+    });
+
+    return { trialEndsAt };
   }),
 });

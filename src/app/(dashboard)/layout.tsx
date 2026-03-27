@@ -20,6 +20,7 @@ import { auth } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { SidebarProvider } from "@/components/layout/sidebar-context";
 import { TrialBanner } from "@/components/TrialBanner";
+import { StartTrialBanner } from "@/components/StartTrialBanner";
 
 /**
  * DashboardLayout is the shared shell for all dashboard pages.
@@ -37,6 +38,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="flex h-screen overflow-hidden bg-stone-50">
         <Sidebar />
         <main className="flex-1 overflow-y-auto flex flex-col">
+          <StartTrialBanner />
           <TrialBanner />
           <div className="flex-1">{children}</div>
         </main>

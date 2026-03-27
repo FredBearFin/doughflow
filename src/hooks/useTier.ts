@@ -66,6 +66,7 @@ export interface TierHelpers extends TierConfig {
   isTrialing:       boolean;   // true while the 6-week free trial is active
   trialDaysLeft:    number;    // 0 when not trialing
   isLoading:        boolean;
+  canStartTrial:    boolean;   // true when no subscription row exists yet
   canAddRecipe:     (currentCount: number) => boolean;
   canAddIngredient: (currentCount: number) => boolean;
 }
@@ -76,14 +77,16 @@ export function useTier(): TierHelpers {
   });
 
   const tier          = toTier((data?.tier ?? "FREE") as DbTier);
-  const isTrialing    = data?.isTrialing   ?? false;
+  const isTrialing    = data?.isTrialing    ?? false;
   const trialDaysLeft = data?.trialDaysLeft ?? 0;
+  const canStartTrial = data?.canStartTrial ?? false;
   const config        = TIER_CONFIG[tier];
 
   return {
     tier,
     isTrialing,
     trialDaysLeft,
+    canStartTrial,
     isLoading,
     ...config,
     canAddRecipe:     (n) => config.recipeLimit     === null || n < config.recipeLimit,
