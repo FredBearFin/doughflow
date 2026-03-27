@@ -2,6 +2,22 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { stringifyCSV } from "@/lib/csv";
 
+// ── Tier check helper ─────────────────────────────────────────────────────────
+// Returns true when the user has an active paid or trialing subscription.
+async function hasExportAccess(userId: string): Promise<boolean> {
+  const sub = await prisma.subscription.findUnique({
+    where:  { userId },
+    select: { tier: true, status: true, trialEndsAt: true },
+  });
+  if (!sub) return false;
+  const now = new Date();
+  const isActivelyTrialing =
+    sub.status === "TRIALING" && sub.trialEndsAt !== null && sub.trialEndsAt > now;
+  if (isActivelyTrialing) return true;
+  if (sub.status === "ACTIVE" && sub.tier !== "FREE") return true;
+  return false;
+}
+
 const TEMPLATES: Record<string, { columns: string[]; example: Record<string, string> }> = {
   ingredients: {
     columns: ["name", "unit", "currentStock", "reorderPoint", "costPerUnit"],
@@ -41,6 +57,12 @@ export async function GET(
 
   const url = new URL(req.url);
   const isTemplate = url.searchParams.get("template") === "1";
+
+  // Template downloads are free-tier friendly (they contain no real data).
+  // Actual data exports require a paid or trialing subscription.
+  if (!isTemplate && !(await hasExportAccess(session.user.id))) {
+    return new Response("Export is a Pro feature. Upgrade at /pricing.", { status: 403 });
+  }
   const today = new Date().toISOString().split("T")[0];
 
   let rows: Record<string, unknown>[];

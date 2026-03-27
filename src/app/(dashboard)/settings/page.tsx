@@ -90,10 +90,11 @@ export default function SettingsPage() {
   }
 
   // ── Derived subscription display values ───────────────────────────────────
-  const isPaid      = sub && sub.tier !== "FREE" && !sub.isTrialing;
-  const isTrialing  = sub?.isTrialing;
-  const isFreeExpired = sub && sub.tier === "FREE" && sub.status !== "TRIALING";
-  const hasBilling  = isPaid; // has a Stripe customer — can open portal
+  const isPaid        = sub && sub.tier !== "FREE" && !sub.isTrialing;
+  const isTrialing    = sub?.isTrialing;
+  // "NONE" = no row yet (can start trial via StartTrialBanner) — don't treat as expired
+  const isFreeExpired = sub && sub.tier === "FREE" && sub.status !== "TRIALING" && sub.status !== "NONE";
+  const hasBilling    = isPaid; // has a Stripe customer — can open portal
 
   const planLabel = isTrialing
     ? `Pro trial — ${sub.trialDaysLeft} day${sub.trialDaysLeft === 1 ? "" : "s"} left`

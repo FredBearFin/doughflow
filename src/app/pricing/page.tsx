@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Check, X, ChefHat, Sparkles, Zap, Shield, BarChart3 } from "lucide-react";
 
@@ -78,8 +80,31 @@ const VALUE_PROPS = [
 ];
 
 export default function PricingPage() {
-  const [billing, setBilling] = useState<Billing>("monthly");
-  const isAnnual = billing === "annual";
+  const [billing, setBilling]       = useState<Billing>("monthly");
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const isAnnual  = billing === "annual";
+  const router    = useRouter();
+  const { data: session } = useSession();
+  const isLoggedIn = !!session?.user;
+
+  async function handleUpgrade() {
+    if (!isLoggedIn) {
+      router.push("/login");
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      const res  = await fetch("/api/stripe/checkout", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ billing }),
+      });
+      const data = await res.json() as { url?: string };
+      if (data.url) router.push(data.url);
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -202,10 +227,10 @@ export default function PricingPage() {
             </ul>
 
             <Link
-              href="/login"
+              href={isLoggedIn ? "/overview" : "/login"}
               className="w-full inline-flex items-center justify-center h-11 rounded-xl text-sm font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
             >
-              Start your free trial
+              {isLoggedIn ? "Go to dashboard" : "Start your free trial"}
             </Link>
           </div>
 
@@ -267,15 +292,20 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <Link
-              href="/login"
-              className="w-full inline-flex items-center justify-center h-12 rounded-xl text-sm font-bold text-white transition-all hover:shadow-xl hover:shadow-amber-300/50 hover:-translate-y-0.5 active:scale-95"
+            <button
+              onClick={handleUpgrade}
+              disabled={checkoutLoading}
+              className="w-full inline-flex items-center justify-center h-12 rounded-xl text-sm font-bold text-white transition-all hover:shadow-xl hover:shadow-amber-300/50 hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)" }}
             >
-              Start your 6-week free trial →
-            </Link>
+              {checkoutLoading
+                ? "Redirecting…"
+                : isLoggedIn
+                  ? "Upgrade to Pro →"
+                  : "Start your 6-week free trial →"}
+            </button>
             <p className="text-center text-xs text-amber-700/60 mt-2.5 font-medium">
-              No credit card · Full access for 6 weeks
+              {isLoggedIn ? "Billed monthly or annually · Cancel anytime" : "No credit card · Full access for 6 weeks"}
             </p>
           </div>
         </div>
