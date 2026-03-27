@@ -122,7 +122,7 @@ export default function LandingPage() {
                 backgroundClip: "text",
               }}
             >
-              before Saturday's market.
+              before Saturday&apos;s market.
             </span>
           </h1>
 
